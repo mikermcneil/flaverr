@@ -1,0 +1,24 @@
+{
+  "name": "flaverr",
+  "version": "0.0.0",
+  "description": "Flavor an Error instance with the specified error code string or dictionary of customizations.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mikermcneil/flaverr.git"
+  },
+  "keywords": [
+    "error",
+    "error-handling",
+    "stack-trace",
+    "error-codes"
+  ],
+  "author": "Mike McNeil",
+  "license": "MIT",
+  "dependencies": {
+    "lodash": "3.10.1"
+  }
+}
