@@ -21,8 +21,8 @@ $ npm install flaverr --save --save-exact
 ```javascript
 var flaverr = require('flaverr');
 
-var err = flaverr('notCandy', new Error('Hello'));
-// => assert(err.code === 'notCandy' && err.message === 'Hello')
+var err = flaverr('notFound', new Error('Could not find user with the specified id.'));
+// => assert(err.code === 'notFound' && err.message === 'Could not find user with the specified id.')
 // => assert(err.constructor.name === 'Error')
 ```
 
@@ -31,15 +31,18 @@ var err = flaverr('notCandy', new Error('Hello'));
 ```javascript
 var flaverr = require('flaverr');
 
-var err = flaverr('notCandy', new Error('Hello'));
-// => assert(err.code === 'notCandy' && err.message === 'Hello')
+var err = flaverr({
+  code: 'notFound',
+  output: { foo: 'bar' }
+}, new Error('Could not find user with the specified id.'));
+// => assert(err.code === 'notFound' && err.message === 'Could not find user with the specified id.')
 // => assert(err.constructor.name === 'Error')
 ```
 
-#### A few examples of common use cases
 
+## A few examples of common use cases
 
-###### Tagging an error with a code before sending it through an asynchronous callback
+#### Tagging an error with a code before sending it through an asynchronous callback
 
 ```javascript
 if (err) { return done(err); }
@@ -49,7 +52,7 @@ if (!user) {
 ```
 
 
-###### In a `try` statement
+#### In a `try` statement
 
 ```javascript
 try {
@@ -68,7 +71,7 @@ try {
 }
 ```
 
-###### In an asynchronous loop
+#### In an asynchronous loop
 
 ```javascript
 async.eachSeries(userRecords, function (user, next) {
