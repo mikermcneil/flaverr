@@ -19,7 +19,7 @@ var _ = require('lodash');
  * @required {String|Dictionary} codeOrCustomizations
  *           e.g. `"E_USAGE"`
  *                    -OR-
- *                `{ code: 'E_UHOH', machineInstance: foo, errors: [] }`
+ *                `{ name: 'UsageError', code: 'E_UHOH', machineInstance: foo, errors: [], misc: 'etc' }`
  *
  * @required {Error} err
  *           e.g. `new Error('Invalid usage: That is not where the quarter is supposed to go.')`
