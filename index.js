@@ -37,7 +37,6 @@ module.exports = function flaverr (codeOrCustomizations, err){
     err.code = codeOrCustomizations;
   }
   else if (_.isObject(codeOrCustomizations) && !_.isArray(codeOrCustomizations) && !_.isFunction(codeOrCustomizations)) {
-    if (codeOrCustomizations.message) { throw new Error('Consistency violation: Unexpected usage of `flaverr()`.  Customizations (dictionary provided as 1st arg) are not allowed to contain a `message` (just pass in the desired message to the Error constructor and pass in the resulting Error instance as the 2nd argument to flaverr!)'); }
     if (codeOrCustomizations.stack) { throw new Error('Consistency violation: Unexpected usage of `flaverr()`.  Customizations (dictionary provided as 1st arg) are not allowed to contain a `stack`.'); }
     _.extend(err, codeOrCustomizations);
   }
