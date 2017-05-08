@@ -4,7 +4,9 @@
   "description": "Flavor an Error instance with the specified error code string or dictionary of customizations.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "custom-tests": "echo \"(No other custom tests yet.)\" && echo # node ./node_modules/mocha/bin/mocha test --recursive",
+    "lint": "node ./node_modules/eslint/bin/eslint . --max-warnings=0 && echo '✔  Your code looks good.'",
+    "test": "npm run lint && npm run custom-tests"
   },
   "repository": {
     "type": "git",
@@ -20,5 +22,8 @@
   "license": "MIT",
   "dependencies": {
     "@sailshq/lodash": "^3.10.2"
+  },
+  "devDependencies": {
+    "eslint": "3.5.0"
   }
 }
