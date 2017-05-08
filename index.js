@@ -79,10 +79,6 @@ module.exports = function flaverr (codeOrCustomizations, err, caller){
         codeOrCustomizations.message = util.inspect(codeOrCustomizations, {depth: 5});
       }
 
-      // If both name and message are set to empty string, build the Error as a bare stack.
-      if (codeOrCustomizations.name === '' && codeOrCustomizations.message === '') {
-
-      }
       err = new Error(codeOrCustomizations.message);
     }
     else {
@@ -110,8 +106,11 @@ module.exports = function flaverr (codeOrCustomizations, err, caller){
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       }//>-
 
-      _.extend(err, codeOrCustomizations);
-    }
+    }//>-
+
+    // Always merge in the customizations, whether this is an existing error or a new one.
+    _.extend(err, codeOrCustomizations);
+
   }
   else {
     throw new Error('Consistency violation: Unexpected usage of `flaverr()`.  Expected 1st argument to be either a string error code or a dictionary of customizations (but instead got `'+util.inspect(codeOrCustomizations, {depth: null})+'`)');
