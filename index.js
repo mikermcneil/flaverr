@@ -158,7 +158,7 @@ module.exports.getBareTrace = function (err){
   var bareTrace = err.stack;
   var numCharsToShift = err.name.length + 2 + err.message.length;
   bareTrace = bareTrace.slice(numCharsToShift);
-  bareTrace = bareTrace.replace(/^[\s\n]+/g,'');
+  bareTrace = bareTrace.replace(/^[\n]+/g,'');
   return bareTrace;
 };
 
