@@ -59,6 +59,11 @@ module.exports = function flaverr (codeOrCustomizations, err){
       if (_.isUndefined(codeOrCustomizations.message)) {
         codeOrCustomizations.message = util.inspect(codeOrCustomizations, {depth: 5});
       }
+
+      // If both name and message are set to empty string, build the Error as a bare stack.
+      if (codeOrCustomizations.name === '' && codeOrCustomizations.message === '') {
+
+      }
       err = new Error(codeOrCustomizations.message);
     }
     else {
@@ -95,3 +100,16 @@ module.exports = function flaverr (codeOrCustomizations, err){
 
   return err;
 };
+
+
+module.exports.buildOmen = function (){
+  // TODO: conslidate into main flaverr function -- it can just be a 3rd argument
+};
+
+module.exports.getBareTrace = function (err){
+  if (_.isUndefined(err)){ err = new Error(); }
+  var bareTrace = err.stack;
+  // TODO: actually implement this one
+  return bareTrace;
+};
+
