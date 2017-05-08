@@ -120,7 +120,7 @@ module.exports = function flaverr (codeOrCustomizations, err, caller){
   // If a `caller` reference was provided, then use it to adjust the stack trace.
   // (Note that we silently skip this step if the `Error.captureStackTrace` is missing
   // on the currently-running platform)
-  if (!_.isUndefined(caller) && Error.captureStackTrace) {
+  if (caller && Error.captureStackTrace) {
     Error.captureStackTrace(err, caller);
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // FUTURE: do something fancier here, or where this is called, to keep track of the omen so that it
