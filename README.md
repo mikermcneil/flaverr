@@ -112,5 +112,5 @@ async.eachSeries(userRecords, function (user, next) {
 
 ## License
 
-MIT &copy; 2016 Mike McNeil
+MIT &copy; 2016, 2017 Mike McNeil
 
