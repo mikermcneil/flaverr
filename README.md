@@ -19,7 +19,7 @@ $ npm install flaverr --save --save-exact
 #### Attach an error code
 
 ```javascript
-var flaverr = require('flaverr');
+const flaverr = require('flaverr');
 
 var err = flaverr('notFound', new Error('Could not find user with the specified id.'));
 // => assert(err.code === 'notFound' && err.message === 'Could not find user with the specified id.')
@@ -29,7 +29,7 @@ var err = flaverr('notFound', new Error('Could not find user with the specified 
 #### Attach arbitrary properties
 
 ```javascript
-var flaverr = require('flaverr');
+const flaverr = require('flaverr');
 
 var err = flaverr({
   code: 'notFound',
@@ -75,7 +75,7 @@ try {
 
 ```javascript
 async.eachSeries(userRecords, function (user, next) {
-  
+
   if (user.pets.length === 0) {
     return next(flaverr('noPets', new Error('User (`'+user.id+'`) has no pets yet!')));
   }
@@ -108,6 +108,90 @@ async.eachSeries(userRecords, function (user, next) {
 });
 ```
 
+
+## Advanced
+
+So, `flaverr()` can be used for more than just flavoring Error instances.
+
+Some of this stuff is pretty low-level, and intended to be used in building higher level libraries (not necessarily from app-level Node.js or browser JavaScript code).
+
+But in the interest of completeness, here's what you can do:
+
+
+#### flaverr(…, …, caller)
+
+If an optional third argument is passed in, it is understood as the caller-- i.e. the function where you called `flaverr()`.  If provided, this function will be used to improve the stack trace of the provided error.
+
+**This is particularly useful for customizing a stack trace; e.g. for building better omens.**  _By "omen", I mean an Error instance instantiated at an earlier time, so that when you use it at a later time, it has the right stack trace, and hasn't been "cliffed out" at an EventEmitter, setTimeout, setImmediate, etc._
+
+> Note: This is not a particularly speedy operation in JavaScript!  For most usages, it won't matter at all.  But for very hot code paths, or use cases that are highly sensitive to performance, you should consider avoiding this feature-- at least some of the time.
+>
+> For example, in parts of [Waterline ORM](http://waterlinejs.org) and the [machine runner](http://node-machine.org), this argument is omitted when running in a production environment:
+> ```js
+> var omen;
+> if (process.env.NODE_ENV==='production') {
+>   omen = flaverr()
+> }
+> else {
+>   omen = flaverr(new Error(), theCurrentFunction);
+> }
+>
+> //…
+>
+> return done(flaverr({}, omen));
+> ```
+
+In the example above, the stack trace of our omen will be snipped based on the instruction where this was invoked (i.e. whatever called "theCurrentFunction").
+
+
+
+#### flaverr.getBareTrace()
+
+Return the bare stack trace string of an Error, with the identifying preamble (`.name` + colon + space + `.message`) trimmed off, leaving only the info about stack frames.
+
+**This is particularly useful for warning messages, and situations where you might want an error to contain more than one trace.**
+
+
+```js
+var err = new Error('Some error');
+
+flaverr.getBareTrace(err);
+//=>
+//'    at repl:1:28\n    at ContextifyScript.Script.runInThisContext (vm.js:44:33)\n    at REPLServer.defaultEval (repl.js:239:29)\n    at bound (domain.js:301:14)\n    at REPLServer.runBound [as eval] (domain.js:314:12)\n    at REPLServer.onLine (repl.js:433:10)\n    at emitOne (events.js:120:20)\n    at REPLServer.emit (events.js:210:7)\n    at REPLServer.Interface._onLine (readline.js:278:10)\n    at REPLServer.Interface._line (readline.js:625:8)'
+```
+
+If nothing is passed in, a new Error will be instantiated on the fly and its stack will be used:
+
+```js
+flaverr.getBareTrace();
+//=>
+//'    at repl:1:28\n    at ContextifyScript.Script.runInThisContext (vm.js:44:33)\n    at REPLServer.defaultEval (repl.js:239:29)\n    at bound (domain.js:301:14)\n    at REPLServer.runBound [as eval] (domain.js:314:12)\n    at REPLServer.onLine (repl.js:433:10)\n    at emitOne (events.js:120:20)\n    at REPLServer.emit (events.js:210:7)\n    at REPLServer.Interface._onLine (readline.js:278:10)\n    at REPLServer.Interface._line (readline.js:625:8)'
+```
+
+
+Here is a more real-world example lifted straight out of [parley](https://npmjs.com/package/parley):
+
+```javascript
+// Implementorland spinlock
+if (self._hasFinishedExecuting) {
+  console.warn(
+    '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n'+
+    'WARNING: Something seems to be wrong with this function.\n'+
+    'It is trying to signal that it has finished AGAIN, after\n'+
+    'already resolving/rejecting once.\n'+
+    '(silently ignoring this...)\n'+
+    '\n'+
+    'To assist you in hunting this down, here is a stack trace:\n'+
+    '```\n'+
+    flaverr.getBareTrace(self._omen)+'\n'+
+    '```\n'+
+    '\n'+
+    ' [?] For more help, visit https://sailsjs.com/support\n'+
+    '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -'
+  );
+  return;
+}
+```
 
 
 ## License

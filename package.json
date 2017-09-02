@@ -4,9 +4,9 @@
   "description": "Flavor an Error instance with the specified error code string or dictionary of customizations.",
   "main": "index.js",
   "scripts": {
-    "custom-tests": "echo \"(No other custom tests yet.)\" && echo # node ./node_modules/mocha/bin/mocha test --recursive",
+    "custom-tests": "echo \"(No other custom tests yet.)\" && echo # node ./node_modules/mocha/bin/mocha test --recursive && echo \"Custom tests all passed.\" && echo",
     "lint": "node ./node_modules/eslint/bin/eslint . --max-warnings=0 && echo '✔  Your code looks good.'",
-    "test": "npm run lint && npm run custom-tests"
+    "test": "npm run lint && npm run custom-tests && echo 'Done.'"
   },
   "repository": {
     "type": "git",
@@ -24,6 +24,9 @@
     "@sailshq/lodash": "^3.10.2"
   },
   "devDependencies": {
-    "eslint": "3.5.0"
+    "eslint": "3.19.0"
+  },
+  "engines": {
+    "node": "4,5,6,7,8"
   }
 }

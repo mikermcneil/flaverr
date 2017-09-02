@@ -146,7 +146,7 @@ module.exports = function flaverr (codeOrCustomizations, err, caller){
  * Return the bare stack trace of an Error, with the identifying `name`/colon/space/`message`
  * preamble trimmed off, leaving only the info about stack frames.
  *
- * @param  {Error?} err   [If unspecified, a new Error will be instantiated on the flow and its stack will be used.]
+ * @param  {Error?} err   [If unspecified, a new Error will be instantiated on the fly and its stack will be used.]
  * @return {String}
  */
 
