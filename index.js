@@ -68,7 +68,8 @@ module.exports = function flaverr (codeOrCustomizations, err, caller){
     }
   }
   else if (_.isObject(codeOrCustomizations) && !_.isArray(codeOrCustomizations) && typeof codeOrCustomizations !== 'function') {
-    if (codeOrCustomizations.stack) { throw new Error('Unexpected usage of `flaverr()`.  Customizations (dictionary provided as 1st arg) are not allowed to contain a `stack`.'); }
+    if (codeOrCustomizations.stack) { throw new Error('Unexpected usage of `flaverr()`.  Customizations (dictionary provided as 1st arg) are not allowed to contain a `stack`.  Instead, use `newErr = flaverr({ name: original.name, message: original.message }, omen)`'); }
+    // if (codeOrCustomizations.stack) { throw new Error('Unexpected usage of `flaverr()`.  Customizations (dictionary provided as 1st arg) are not allowed to contain a `stack`.  Instead, use `flaverr.traceFrom(omen, err)`'); }
 
     if (!err){
       if (codeOrCustomizations.name === undefined) {
@@ -139,7 +140,7 @@ module.exports = function flaverr (codeOrCustomizations, err, caller){
 
 
 /**
- * getBareTrace()
+ * flaverr.getBareTrace()
  *
  * Return the bare stack trace of an Error, with the identifying `name`/colon/space/`message`
  * preamble trimmed off, leaving only the info about stack frames.
@@ -168,3 +169,40 @@ module.exports.getBareTrace = function (err){
 
 
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// FUTURE: Additionally, this additional layer of wrapping could take care of improving
+// stack traces, even in the case where an Error comes up from inside the implementation.
+// If done carefully, this can be done in a way that protects characteristics of the
+// internal Error (e.g. its "code", etc.), while also providing a better stack trace.
+//
+// For example, something like this:
+// ```
+// /**
+//  * flaverr.traceFrom()
+//  *
+//  * Return a modified version of the specified error.
+//  *
+//  */
+// module.exports.traceFrom = function (omen, err) {
+//   var relevantPropNames = _.difference(
+//     _.union(
+//       ['name', 'message'],
+//       Object.getOwnPropertyNames(err)
+//     ),
+//     ['stack']
+//   );
+//   var errTemplate = _.pick(err, relevantPropNames);
+//   errTemplate.raw = err;//<< could override stuff-- that's ok (see below).
+//   var _mainFlaverrFn = module.exports;
+//   var newError = _mainFlaverrFn(errTemplate, omen);
+//   return newError;
+// };
+// ```
+// > Note that, above, we also kept the original error (and thus _its_ trace) and
+// > attached that as a separate property.  If the original error already has "raw",
+// > that's ok.  This is one thing that it makes sense for us to mutate-- and any
+// > attempt to do otherwise would probably be more confusing (you can imagine a `while`
+// > loop where we add underscores in front of the string "raw" ad infinitum, and then
+// > eventually, when there are no conflicts, use that as a keyname.  But again, that
+// > ends up being more confusing from a userland perspective.)
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
