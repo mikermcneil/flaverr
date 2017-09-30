@@ -121,8 +121,8 @@ module.exports = function flaverr (codeOrCustomizations, err, caller){
   if (caller && Error.captureStackTrace) {
     Error.captureStackTrace(err, caller);
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    // FUTURE: do something fancier here, or where this is called, to keep track of the omen so that it
-    // can support both sorts of usages (Deferred and explicit callback.)
+    // FUTURE: maybe do something fancier here, or where this is called, to keep track of the omen so
+    // that it can support both sorts of usages (Deferred and explicit callback.)
     //
     // This way, it could do an even better job of reporting exactly where the error came from in
     // userland code as the very first entry in the stack trace.  e.g.
