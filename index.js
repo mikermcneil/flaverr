@@ -68,7 +68,7 @@ module.exports = function flaverr (codeOrCustomizations, err, caller){
     }
   }
   else if (_.isObject(codeOrCustomizations) && !_.isArray(codeOrCustomizations) && typeof codeOrCustomizations !== 'function') {
-    if (codeOrCustomizations.stack) { throw new Error('Unexpected usage of `flaverr()`.  Customizations (dictionary provided as 1st arg) are not allowed to contain a `stack`.  Instead, use `flaverr.setStackTrace(errWithPreferredStack)`.'); }
+    if (codeOrCustomizations.stack) { throw new Error('Unexpected usage of `flaverr()`.  Customizations (dictionary provided as 1st arg) are not allowed to contain a `stack`.'); }
 
     if (!err){
       if (codeOrCustomizations.name === undefined) {
