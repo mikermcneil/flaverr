@@ -50,45 +50,43 @@ var _ = require('@sailshq/lodash');
 
 module.exports = function flaverr (codeOrCustomizations, err, caller){
 
-  if (!_.isUndefined(err) && !_.isError(err)) {
-    throw new Error('Consistency violation: Unexpected usage of `flaverr()`.  If specified, expected 2nd argument to be an Error instance (but instead got `'+util.inspect(err, {depth: null})+'`)');
+  if (err !== undefined && !_.isError(err)) {
+    throw new Error('Unexpected usage of `flaverr()`.  If specified, expected 2nd argument to be an Error instance (but instead got `'+util.inspect(err, {depth: null})+'`)');
   }
 
-  if (!_.isUndefined(caller) && !_.isFunction(caller)) {
-    throw new Error('Consistency violation: Unexpected usage of `flaverr()`.  If specified, expected 3rd argument should be a function that will be used as a stack trace context (but instead got `'+util.inspect(caller, {depth: null})+'`)');
+  if (caller !== undefined && typeof caller !== 'function') {
+    throw new Error('Unexpected usage of `flaverr()`.  If specified, expected 3rd argument should be a function that will be used as a stack trace context (but instead got `'+util.inspect(caller, {depth: null})+'`)');
   }
 
 
   if (_.isString(codeOrCustomizations)) {
     if (err) {
       err.code = codeOrCustomizations;
-    }
-    else {
+    } else {
       err = new Error('Code: '+codeOrCustomizations);
       err.name = 'AnonymousError';
     }
   }
-  else if (_.isObject(codeOrCustomizations) && !_.isArray(codeOrCustomizations) && !_.isFunction(codeOrCustomizations)) {
-    if (codeOrCustomizations.stack) { throw new Error('Consistency violation: Unexpected usage of `flaverr()`.  Customizations (dictionary provided as 1st arg) are not allowed to contain a `stack`.'); }
+  else if (_.isObject(codeOrCustomizations) && !_.isArray(codeOrCustomizations) && typeof codeOrCustomizations !== 'function') {
+    if (codeOrCustomizations.stack) { throw new Error('Unexpected usage of `flaverr()`.  Customizations (dictionary provided as 1st arg) are not allowed to contain a `stack`.  Instead, use `flaverr.setStackTrace(errWithPreferredStack)`.'); }
 
     if (!err){
-      if (_.isUndefined(codeOrCustomizations.name)) {
+      if (codeOrCustomizations.name === undefined) {
         codeOrCustomizations.name = 'AnonymousError';
       }
-      if (_.isUndefined(codeOrCustomizations.message)) {
+      if (codeOrCustomizations.message === undefined) {
         codeOrCustomizations.message = util.inspect(codeOrCustomizations, {depth: 5});
       }
 
       err = new Error(codeOrCustomizations.message);
-    }
-    else {
+    } else {
 
       if (codeOrCustomizations.name || codeOrCustomizations.message) {
 
-        if (_.isUndefined(codeOrCustomizations.name)) {
+        if (codeOrCustomizations.name === undefined) {
           codeOrCustomizations.name = err.name;
         }
-        if (_.isUndefined(codeOrCustomizations.message)) {
+        if (codeOrCustomizations.message === undefined) {
           codeOrCustomizations.message = err.message;
         }
         var numCharsToShift = err.name.length + 2 + err.message.length;
@@ -104,16 +102,16 @@ module.exports = function flaverr (codeOrCustomizations, err, caller){
         // }
         // ```
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      }//>-
+      }//ﬁ
 
-    }//>-
+    }//ﬁ
 
     // Always merge in the customizations, whether this is an existing error or a new one.
     _.extend(err, codeOrCustomizations);
 
   }
   else {
-    throw new Error('Consistency violation: Unexpected usage of `flaverr()`.  Expected 1st argument to be either a string error code or a dictionary of customizations (but instead got `'+util.inspect(codeOrCustomizations, {depth: null})+'`)');
+    throw new Error('Unexpected usage of `flaverr()`.  Expected 1st argument to be either a string error code or a dictionary of customizations (but instead got `'+util.inspect(codeOrCustomizations, {depth: null})+'`)');
   }
 
 
@@ -133,7 +131,7 @@ module.exports = function flaverr (codeOrCustomizations, err, caller){
     // // ^^ but would need to pass through the original omen or something
     // ```
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  }
+  }//ﬁ
 
   return err;
 };
@@ -151,8 +149,8 @@ module.exports = function flaverr (codeOrCustomizations, err, caller){
  */
 
 module.exports.getBareTrace = function (err){
-  if (_.isUndefined(err)){ err = new Error(); }
-  if (!_.isError(err)){ throw new Error('Consistency violation: If an argument is supplied to `getBareTrace()`, it must be an Error instance.  Instead, got: '+util.inspect(err, {depth: 5})); }
+  if (err === undefined){ err = new Error(); }
+  if (!_.isError(err)){ throw new Error('Unexpected usage of `getBareTrace()`.  If an argument is supplied, it must be an Error instance.  Instead, got: '+util.inspect(err, {depth: 5})); }
 
   var bareTrace = err.stack;
   var numCharsToShift = err.name.length + 2 + err.message.length;
