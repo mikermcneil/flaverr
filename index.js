@@ -206,3 +206,132 @@ module.exports.getBareTrace = function (err){
 // > eventually, when there are no conflicts, use that as a keyname.  But again, that
 // > ends up being more confusing from a userland perspective.)
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+
+
+
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// FUTURE: something like:
+// ```
+// try {
+//   doSomethingThatMightThrow();
+// } catch (err){
+//   // if 2nd arg is omitted, 'code' is assumed (that's flaverr's whole deal anyway)
+//   flaverr.switch(err, 'code', {
+//     E_ATTR_NOT_COMPATIBLE_WITH_AT_REST_ENCRYPTION: (err)=>{
+//       throw flaverr({ message: 'Whoops!  Thats not compatible.  '+err.message }, err);
+//     },
+//     E_INVALID_ENCRYPT: (err)=>{
+//       throw flaverr({ message: 'Whoops!  '+err.message }, err);
+//     },
+//     E_ATTR_MALFORMED: ()=>{
+//       // Note that we can just use closure scope access for brevity
+//       throw flaverr({ message: 'Whoops!  '+err.message }, err);
+//     },
+//     default: (err)=>{
+//       // if `default` is omitted, it just does `throw err` by default
+//       throw err;
+//     }
+//   });
+// }
+// ```
+//
+// …which is the same thing as:
+// ```
+// try {
+//   doSomethingThatMightThrow();
+// } catch (err){
+//   flaverr.switch(err, {
+//     E_ATTR_NOT_COMPATIBLE_WITH_AT_REST_ENCRYPTION(){
+//       throw flaverr({ message: 'Whoops!  Thats not compatible.  '+err.message }, err);
+//     },
+//     E_INVALID_ENCRYPT(){
+//       throw flaverr({ message: 'Whoops!  '+err.message }, err);
+//     },
+//     E_ATTR_MALFORMED(){
+//       throw flaverr({ message: 'Whoops!  '+err.message }, err);
+//     },
+//   });
+// }
+// ```
+//
+// This could also support async functions, e.g.:
+// ```
+// try {
+//   doSomethingThatMightThrow();
+//   await doSomethingElseThatMightThrow();
+// } catch (err){
+//   flaverr.switch({
+//     async E_ATTR_NOT_COMPATIBLE_WITH_AT_REST_ENCRYPTION(err) {
+//       // …
+//     },
+//     E_INVALID_ENCRYPT=>async (err) {
+//       // …
+//     },
+//   });
+// }
+// ```
+//
+//
+// ^^ but all that stuff above could cause issues in rare cases.  (e.g. what if the value is `default`?!)
+//
+// So instead, maybe something more like:
+// ```
+// try {
+//   doSomethingThatMightThrow();
+// } catch (err){
+//   flaverr.switch(err, [
+//     [{code:'E_ATTR_NOT_COMPATIBLE_WITH_AT_REST_ENCRYPTION'}, ()=>{
+//       throw flaverr({ message: 'Whoops!  Thats not compatible.  '+err.message }, err);
+//     }],
+//     [{code:'E_INVALID_ENCRYPT'}, ()=>{
+//       throw flaverr({ message: 'Whoops!  '+err.message }, err);
+//     }],
+//     [{code:'E_ATTR_MALFORMED'}, ()=>{
+//       throw flaverr({ message: 'Whoops!  '+err.message }, err);
+//     }],
+//     [()=>{
+//       throw err;
+//     }]
+//   ]);
+// }
+// ```
+//
+// Which could also be further simplified like:
+// ```
+// try {
+//   doSomethingThatMightThrow();
+// } catch (err){
+//   flaverr.switch(err, [
+//     ['E_ATTR_NOT_COMPATIBLE_WITH_AT_REST_ENCRYPTION', ()=>{
+//       throw flaverr({ message: 'Whoops!  Thats not compatible.  '+err.message }, err);
+//     }],
+//     ['E_INVALID_ENCRYPT', 'E_ATTR_MALFORMED', ()=>{
+//       throw flaverr({ message: 'Whoops!  '+err.message }, err);
+//     }]
+//   ]);
+// }
+// ```
+//
+// ^^ that's probably the best one.
+//
+// But getting even more experimental for a second, maybe even:
+// ```
+// await flaverr.try(async ()=>{
+//   doSomethingThatMightThrow();
+//   await doSomethingElseThatMightThrow();
+// }).catch(
+//   ['E_ATTR_NOT_COMPATIBLE_WITH_AT_REST_ENCRYPTION', (err)=>{
+//     message: 'Whoops!  Thats not compatible.  '+err.message
+//   }],
+//   ['E_INVALID_ENCRYPT', 'E_ATTR_MALFORMED', (err)=>{
+//     message: 'Whoops!  '+err.message
+//   }]
+// ]);
+// ```
+// ^^ although that last one is kinda heavy-handed
+//
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
