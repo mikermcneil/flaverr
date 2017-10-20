@@ -28,16 +28,16 @@ var _ = require('@sailshq/lodash');
  * > https://github.com/balderdashy/waterline/blob/6b1f65e77697c36561a0edd06dff537307986cb7/lib/waterline/utils/query/build-omen.js
  *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- * @required {String|Dictionary} codeOrCustomizations
+ * @param {String|Dictionary} codeOrCustomizations
  *           e.g. `"E_USAGE"`
  *                    -OR-
  *                `{ name: 'UsageError', code: 'E_UHOH', machineInstance: foo, errors: [], misc: 'etc' }`
  *
- * @optional {Error?} err
- *           If omitted, a new Error will be instantiated instead.
+ * @param {Error?} err
+ *           If `undefined`, a new Error will be instantiated instead.
  *           e.g. `new Error('Invalid usage: That is not where the quarter is supposed to go.')`
  *
- * @optional {Function?} caller
+ * @param {Function?} caller
  *        An optional function to use for context (useful for building omens)
  *        The stack trace of the omen will be snipped based on the instruction where
  *        this "caller" function was invoked.
@@ -48,7 +48,7 @@ var _ = require('@sailshq/lodash');
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  */
 
-module.exports = function flaverr (codeOrCustomizations, err, caller){
+function flaverr (codeOrCustomizations, err, caller){
 
   if (err !== undefined && !_.isError(err)) {
     throw new Error('Unexpected usage of `flaverr()`.  If specified, expected 2nd argument to be an Error instance (but instead got `'+util.inspect(err, {depth: null})+'`)');
@@ -138,6 +138,10 @@ module.exports = function flaverr (codeOrCustomizations, err, caller){
 };//ƒ
 
 
+// Export flaverr.
+module.exports = flaverr;
+
+
 
 /**
  * flaverr.getBareTrace()
@@ -152,7 +156,7 @@ module.exports = function flaverr (codeOrCustomizations, err, caller){
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  *
  * @param  {Error?} err   [If unspecified, a new Error will be instantiated on the fly and its stack will be used.]
- * @return {String}
+ * @returns {String}
  */
 
 module.exports.getBareTrace = function (err){
@@ -165,6 +169,97 @@ module.exports.getBareTrace = function (err){
   bareTrace = bareTrace.replace(/^[\n]+/g,'');
   return bareTrace;
 };
+
+
+
+module.exports.getMessage = function (err) {
+
+  if (_.isError(err)) {
+    return err.message;
+  }
+  else if (_.isObject(err) && err.cause && _.isError(err.cause)) {
+    // > async+await errors from bluebird are not necessarily "true" Error instances,
+    // > as per _.isError() anyway (see https://github.com/node-machine/machine/commits/6b9d9590794e33307df1f7ba91e328dd236446a9).
+    // > So to be reasonable, we have to be a bit more relaxed here and tolerate these
+    // > sorts of "errors" directly as well (by tweezing out the `cause`, which is
+    // > where the underlying Error instance actually lives.)
+    return err.cause.message;
+  }
+  else if (_.isString(err)) {
+    // > just use the string as the message
+    return err;
+  }
+  else {
+    // > pretty-print the original string as the message
+    return util.inspect(err, {depth: 5});
+  }
+
+};
+
+
+
+
+/**
+ * flaverr.normalize()
+ *
+ * Investigate the provided value and return a canonical Error instance.
+ *
+ * > • If the provided value is a canonical Error instance already, then
+ * >   this just returns it as-is.
+ * >
+ * > • Otherwise, it attempts to tease out a canonical Error using a few
+ * >   different heuristics, including support for parsing special
+ * >   not-quite-Errors from bluebird.
+ * >
+ * > • If no canonical Error can be obtained, this function constructs a new
+ * >   Error instance, maintaining the provided value as `.raw` and making a
+ * >   simple, best-effort guess at an appropriate error message.
+ *
+ * @param  {Ref}  err
+ * @param  {Error?}  omenForNewError
+ *         If `normalize()` determines that it must construct a new Error instance,
+ *         then, if specified, this omen will be consumed instead of generating a new
+ *         Error.
+ *
+ * @returns {Error}
+ */
+
+module.exports.normalize = function(err, omenForNewError) {
+
+  // Ensure we're dealing w/ an Error instance.
+  if (_.isError(err)) {
+    // > ok as-is
+    return err;
+  }
+  else if (_.isObject(err) && err.cause && _.isError(err.cause)) {
+    // > Note that async+await/bluebird/Node 8 errors are not necessarily "true" Error instances,
+    // > as per _.isError() anyway (see https://github.com/node-machine/machine/commits/6b9d9590794e33307df1f7ba91e328dd236446a9).
+    // > So if we want to keep a reasonable stack trace, we have to be a bit more relaxed here and
+    // > tolerate these sorts of "errors" directly as well (by tweezing out the `cause`, which is
+    // > where the original Error lives.)
+    return err.cause;
+  }
+  else if (_.isString(err)) {
+    // > build a new error using the original string as the `message`
+    // > (and still attach the original string as `.raw` as well)
+    return flaverr({
+      message: err,
+      raw: err
+    }, omenForNewError||undefined);
+  }
+  else {
+    // > build a new error, pretty-printing the original value as the `message`
+    // > (and still attach the original value as `.raw` as well)
+    return flaverr({
+      message: util.inspect(err, {depth: 5}),
+      raw: err
+    }, omenForNewError||undefined);
+  }
+
+};
+
+
+
 
 
 
