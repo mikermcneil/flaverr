@@ -172,37 +172,12 @@ module.exports.getBareTrace = function (err){
 
 
 
-module.exports.getMessage = function (err) {
-
-  if (_.isError(err)) {
-    return err.message;
-  }
-  else if (_.isObject(err) && err.cause && _.isError(err.cause)) {
-    // > async+await errors from bluebird are not necessarily "true" Error instances,
-    // > as per _.isError() anyway (see https://github.com/node-machine/machine/commits/6b9d9590794e33307df1f7ba91e328dd236446a9).
-    // > So to be reasonable, we have to be a bit more relaxed here and tolerate these
-    // > sorts of "errors" directly as well (by tweezing out the `cause`, which is
-    // > where the underlying Error instance actually lives.)
-    return err.cause.message;
-  }
-  else if (_.isString(err)) {
-    // > just use the string as the message
-    return err;
-  }
-  else {
-    // > pretty-print the original string as the message
-    return util.inspect(err, {depth: 5});
-  }
-
-};
-
-
-
 
 /**
- * flaverr.normalize()
+ * flaverr.parseError()
  *
- * Investigate the provided value and return a canonical Error instance.
+ * Investigate the provided value and return a canonical Error instance,
+ * if it is one itself, or if is is a recognized wrapper that contains one.
  *
  * > • If the provided value is a canonical Error instance already, then
  * >   this just returns it as-is.
@@ -211,6 +186,43 @@ module.exports.getMessage = function (err) {
  * >   different heuristics, including support for parsing special
  * >   not-quite-Errors from bluebird.
  * >
+ * > • If no existing Error instance can be squeezed out, then return `undefined`.
+ * >   (The `.parseError()` function **NEVER** constructs Error instances.)
+ *
+ * @param  {Ref}  err
+ *
+ * @returns {Error}
+ */
+
+module.exports.parseError = function(err) {
+
+  if (_.isError(err)) {
+    // > ok as-is
+    return err;
+  }
+  else if (_.isObject(err) && err.cause && _.isError(err.cause)) {
+    // > async+await errors from bluebird are not necessarily "true" Error instances,
+    // > as per _.isError() anyway (see https://github.com/node-machine/machine/commits/6b9d9590794e33307df1f7ba91e328dd236446a9).
+    // > So to be reasonable, we have to be a bit more relaxed here and tolerate these
+    // > sorts of "errors" directly as well (by tweezing out the `cause`, which is
+    // > where the underlying Error instance actually lives.)
+    return err.cause;
+  }
+  else {
+    return undefined;
+  }
+
+};
+
+
+
+/**
+ * flaverr.normalize()
+ *
+ * Investigate the provided value and attempt to parse out a canonical Error instance
+ * using `flaverr.parseError()`.  If that fails, construct a new Error instance (or
+ * consume the omen, if one was provided) and return that.
+ *
  * > • If no canonical Error can be obtained, this function constructs a new
  * >   Error instance, maintaining the provided value as `.raw` and making a
  * >   simple, best-effort guess at an appropriate error message.
@@ -226,18 +238,8 @@ module.exports.getMessage = function (err) {
 
 module.exports.normalize = function(err, omenForNewError) {
 
-  // Ensure we're dealing w/ an Error instance.
-  if (_.isError(err)) {
-    // > ok as-is
-    return err;
-  }
-  else if (_.isObject(err) && err.cause && _.isError(err.cause)) {
-    // > Note that async+await/bluebird/Node 8 errors are not necessarily "true" Error instances,
-    // > as per _.isError() anyway (see https://github.com/node-machine/machine/commits/6b9d9590794e33307df1f7ba91e328dd236446a9).
-    // > So if we want to keep a reasonable stack trace, we have to be a bit more relaxed here and
-    // > tolerate these sorts of "errors" directly as well (by tweezing out the `cause`, which is
-    // > where the original Error lives.)
-    return err.cause;
+  if (flaverr.parseError(err)) {
+    return flaverr.parseError(err);
   }
   else if (_.isString(err)) {
     // > build a new error using the original string as the `message`
@@ -255,6 +257,14 @@ module.exports.normalize = function(err, omenForNewError) {
       raw: err
     }, omenForNewError||undefined);
   }
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // ^ FUTURE: Better error message for this last case?
+  // (see the `exits.error` impl in the machine runner for comparison,
+  // and be sure to try any changes out by hand to experience the message
+  // before deciding.  It's definitely not cut and dry whether there should
+  // even be a custom message in this case, or if just displaying the output
+  // as the `message` -- like we currently do -- is more appropriate)
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 };
 
