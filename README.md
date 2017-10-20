@@ -129,20 +129,84 @@ If an optional third argument is passed in, it is understood as the caller-- i.e
 > For example, in parts of [Waterline ORM](http://waterlinejs.org) and the [machine runner](http://node-machine.org), this argument is omitted when running in a production environment:
 > ```js
 > var omen;
-> if (process.env.NODE_ENV==='production') {
->   omen = flaverr()
-> }
-> else {
->   omen = flaverr(new Error(), theCurrentFunction);
+> if (process.env.NODE_ENV!=='production' || process.env.DEBUG) {
+>   omen = flaverr({}, new Error('omen'), theCurrentFunction);
 > }
 >
 > //…
->
-> return done(flaverr({}, omen));
 > ```
 
 In the example above, the stack trace of our omen will be snipped based on the instruction where this was invoked (i.e. whatever called "theCurrentFunction").
 
+
+
+#### flaverr.buildOmen()
+
+Build an omen.
+
+> This is just a convenience method.
+
+
+```javascript
+doSomethingThatRandomlyFailsSometimes();
+```
+
+```javascript
+function doSomethingThatRandomlyFailsSometimes() {
+  var omen;
+  if (process.env.NODE_ENV !== 'production' || process.env.DEBUG) {
+    omen = flaverr.buildOmen(doSomethingThatRandomlyFailsSometimes);
+  }
+
+  // …
+
+  if (Math.random() > 0.5) {
+    throw flaverr({
+      message: 'Wulp, it randomly failed.'
+    }, omen);
+  }
+
+}
+```
+
+
+#### flaverr.parseError()
+
+There are certain Error-like values (e.g. from the bluebird library) that aren't quite ready to use as normal Errors, but can be easily parsed without being forced to construct a new Error instance or mutating anything.
+
+This method provides a way to normalize errors like that.  If it determines that it cannot, then it just returns undefined.
+
+```js
+// …
+err = flaverr.parseError(err) || err;
+
+if (_.isError(err)) {
+  throw flaverr({
+    message: 'Something went wrong in aisle 6: '+err.message
+  }, omen);
+}
+else {
+  throw flaverr({
+    message: 'Something went wrong in aisle 6: '+util.inspect(err, {depth:5})
+  }, omen);
+}
+```
+
+
+#### flaverr.parseOrBuildError()
+
+Sometimes, you really want to make sure you have an Error instance, no matter what-- even if you have to construct one!
+
+This method does just that.
+
+```javascript
+// …
+
+err = flaverr.parseOrBuildError(err, omen);
+throw flaverr({
+  message: 'Something went wrong in aisle 6: '+err.message
+}, err);
+```
 
 
 #### flaverr.getBareTrace()

@@ -76,6 +76,9 @@ function flaverr (codeOrCustomizations, err, caller){
       if (codeOrCustomizations.message !== undefined) {
         err = new Error(codeOrCustomizations.message);
       }
+      else if (Object.keys(codeOrCustomizations).length === 0) {
+        err = new Error();
+      }
       else {
         err = new Error(util.inspect(codeOrCustomizations, {depth: 5}));
       }
@@ -170,6 +173,40 @@ module.exports.getBareTrace = function (err){
   return bareTrace;
 };
 
+
+
+
+/**
+ * buildOmen()
+ *
+ * Return a new Error instance for use as an omen.
+ *
+ * > Note: This isn't particularly slow, but it isn't speedy either.
+ * > For VERY hot code paths, it's a good idea to skip this in production unless debugging.
+ * > The standard way to do that is a userland check like:
+ * > ```
+ * > var omen = (process.env.NODE_ENV !== 'production' || process.env.DEBUG)?
+ * >   flaverr.buildOmen(theUserlandFunctionIAmInsideOf)
+ * >   :
+ * >   undefined;
+ * > ```
+ *
+ * @param {Function?} caller
+ *        An optional function to use for context (useful for further improving stack traces)
+ *        The stack trace of the omen will be snipped based on the instruction where
+ *        this "caller" function was invoked.  Otherwise, if omitted, `.buildOmen()` itself
+ *        will be considered the caller.
+ *
+ * @returns {Error}
+ */
+module.exports.buildOmen = function buildOmen(caller) {
+  if (caller !== undefined && !_.isFunction(caller)){ throw new Error('Unexpected usage of `buildOmen()`.  If an argument is supplied, it must be a function (the "caller", used for adjusting the stack trace).  Instead, got: '+util.inspect(caller, {depth: 5})); }
+  var omen = flaverr({}, new Error('omen'), caller||buildOmen);
+  if (caller !== undefined && !omen.stack.match(/\n/)) {
+    throw new Error('Unexpected behavior in `buildOmen()`.  When constructing omen using the specified "caller", the resulting Error\'s stack trace does not contain any newline characters.  This usually means the provided "caller" isn\'t actually the caller at all (or at least it wasn\'t this time).  Thus `Error.captureStackTrace()` failed to determine a trace.  To resolve this, pass in a valid "caller" or if that\'s not possible, omit the "caller" argument altogether.');
+  }
+  return omen;
+};
 
 
 
