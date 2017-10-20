@@ -191,7 +191,7 @@ module.exports.getBareTrace = function (err){
  *
  * @param  {Ref}  err
  *
- * @returns {Error}
+ * @returns {Error?}
  */
 
 module.exports.parseError = function(err) {
@@ -217,11 +217,12 @@ module.exports.parseError = function(err) {
 
 
 /**
- * flaverr.normalize()
+ * flaverr.parseOrBuildError()
  *
  * Investigate the provided value and attempt to parse out a canonical Error instance
  * using `flaverr.parseError()`.  If that fails, construct a new Error instance (or
- * consume the omen, if one was provided) and return that.
+ * consume the omen, if one was provided) using the provided data as a basis for the
+ * message, and then return that.
  *
  * > • If no canonical Error can be obtained, this function constructs a new
  * >   Error instance, maintaining the provided value as `.raw` and making a
@@ -229,14 +230,14 @@ module.exports.parseError = function(err) {
  *
  * @param  {Ref}  err
  * @param  {Error?}  omenForNewError
- *         If `normalize()` determines that it must construct a new Error instance,
+ *         If `parseOrBuildError()` determines that it must construct a new Error instance,
  *         then, if specified, this omen will be consumed instead of generating a new
  *         Error.
  *
  * @returns {Error}
  */
 
-module.exports.normalize = function(err, omenForNewError) {
+module.exports.parseOrBuildError = function(err, omenForNewError) {
 
   if (flaverr.parseError(err)) {
     return flaverr.parseError(err);
