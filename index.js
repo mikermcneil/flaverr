@@ -60,11 +60,11 @@ function flaverr (codeOrCustomizations, err, caller){
 
 
   if (_.isString(codeOrCustomizations)) {
-    if (err) {
+    if (!err) {
+      err = new Error();
       err.code = codeOrCustomizations;
     } else {
-      err = new Error('Code: '+codeOrCustomizations);
-      err.name = 'AnonymousError';
+      err.code = codeOrCustomizations;
     }
   }
   else if (_.isObject(codeOrCustomizations) && !_.isArray(codeOrCustomizations) && typeof codeOrCustomizations !== 'function') {
@@ -72,14 +72,14 @@ function flaverr (codeOrCustomizations, err, caller){
     // if (codeOrCustomizations.stack) { throw new Error('Unexpected usage of `flaverr()`.  Customizations (dictionary provided as 1st arg) are not allowed to contain a `stack`.  Instead, use `flaverr.traceFrom(omen, err)`'); }
 
     if (!err){
-      if (codeOrCustomizations.name === undefined) {
-        codeOrCustomizations.name = 'AnonymousError';
+
+      if (codeOrCustomizations.message !== undefined) {
+        err = new Error(codeOrCustomizations.message);
       }
-      if (codeOrCustomizations.message === undefined) {
-        codeOrCustomizations.message = util.inspect(codeOrCustomizations, {depth: 5});
+      else {
+        err = new Error(util.inspect(codeOrCustomizations, {depth: 5}));
       }
 
-      err = new Error(codeOrCustomizations.message);
     } else {
 
       if (codeOrCustomizations.name || codeOrCustomizations.message) {
