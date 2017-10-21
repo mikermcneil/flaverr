@@ -272,6 +272,13 @@ module.exports.parseError = function(err) {
  *         Error.
  *
  * @returns {Error}
+ *
+ *
+ * e.g.
+ * ```
+ *   flaverr.unwrap('E_NON_ERROR', flaverr.parseOrBuildError('bleh'))
+ *   // => 'bleh'
+ * ```
  */
 
 module.exports.parseOrBuildError = function(err, omenForNewError) {
@@ -285,12 +292,7 @@ module.exports.parseOrBuildError = function(err, omenForNewError) {
     // > build a new error, pretty-printing the original value as the `message`,
     // > or using it verbatim if it's a string.  Note that we still attach the
     // > original value as `.raw` as well)
-    return flaverr({
-      name: 'Envelope',
-      code: 'E_NON_ERROR',
-      message: _.isString(err) ? err : util.inspect(err, {depth: 5}),
-      raw: err
-    }, omenForNewError||undefined);
+    return flaverr.wrap('E_NON_ERROR', err, omenForNewError||undefined);
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // ^ FUTURE: Better error message for this case?
     // (see the `exits.error` impl in the machine runner for comparison,
@@ -382,6 +384,12 @@ module.exports.wrap = function(codeOrCustomizations, raw, omen){
  *  // => 3
  *
  *  flaverr.unwrap('E_NON_ERROR', 3)
+ *  // => 3
+ *
+ *  flaverr.unwrap({}, flaverr.parseOrBuildError(3))
+ *  // => 3
+ *
+ *  flaverr.unwrap({}, flaverr.wrap({}, 3))
  *  // => 3
  *
  *  flaverr.unwrap({code:'E_ESCAPE_HATCH', traceRef: self}, err)
