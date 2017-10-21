@@ -276,33 +276,30 @@ module.exports.parseError = function(err) {
 
 module.exports.parseOrBuildError = function(err, omenForNewError) {
 
-  if (flaverr.parseError(err)) {
-    return flaverr.parseError(err);
-  }
-  else if (_.isString(err)) {
-    // > build a new error using the original string as the `message`
-    // > (and still attach the original string as `.raw` as well)
-    return flaverr({
-      message: err,
-      raw: err
-    }, omenForNewError||undefined);
+  var parsedErr = flaverr.parseError(err);
+
+  if (parsedErr) {
+    return parsedErr;
   }
   else {
-    // > build a new error, pretty-printing the original value as the `message`
-    // > (and still attach the original value as `.raw` as well)
+    // > build a new error, pretty-printing the original value as the `message`,
+    // > or using it verbatim if it's a string.  Note that we still attach the
+    // > original value as `.raw` as well)
     return flaverr({
-      message: util.inspect(err, {depth: 5}),
+      name: 'Envelope',
+      code: 'E_NON_ERROR',
+      message: _.isString(err) ? err : util.inspect(err, {depth: 5}),
       raw: err
     }, omenForNewError||undefined);
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // ^ FUTURE: Better error message for this case?
+    // (see the `exits.error` impl in the machine runner for comparison,
+    // and be sure to try any changes out by hand to experience the message
+    // before deciding.  It's definitely not cut and dry whether there should
+    // even be a custom message in this case, or if just displaying the output
+    // as the `message` -- like we currently do -- is more appropriate)
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   }
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  // ^ FUTURE: Better error message for this last case?
-  // (see the `exits.error` impl in the machine runner for comparison,
-  // and be sure to try any changes out by hand to experience the message
-  // before deciding.  It's definitely not cut and dry whether there should
-  // even be a custom message in this case, or if just displaying the output
-  // as the `message` -- like we currently do -- is more appropriate)
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 };
 
