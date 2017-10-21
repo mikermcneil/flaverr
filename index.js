@@ -293,14 +293,6 @@ module.exports.parseOrBuildError = function(err, omenForNewError) {
     // > or using it verbatim if it's a string.  Note that we still attach the
     // > original value as `.raw` as well)
     return flaverr.wrap('E_NON_ERROR', err, omenForNewError||undefined);
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    // ^ FUTURE: Better error message for this case?
-    // (see the `exits.error` impl in the machine runner for comparison,
-    // and be sure to try any changes out by hand to experience the message
-    // before deciding.  It's definitely not cut and dry whether there should
-    // even be a custom message in this case, or if just displaying the output
-    // as the `message` -- like we currently do -- is more appropriate)
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   }
 
 };
