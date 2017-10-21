@@ -340,13 +340,17 @@ module.exports.unwrap = function(envelopeOrSomething){
  * > https://lodash.com/docs/3.10.1#matches
  *
  * @param  {String|Dictionary} negotiationRule
- * @param  {Error} err
+ * @param  {Ref} errOrSomething
  * @return {Boolean}
  *
  * --
  *
  * > e.g.
  * > ```
+ * > if (flaverr.taste('E_UNIQUE', 3822)){
+ * >   //…
+ * > }
+ * >
  * > if (flaverr.taste('E_UNIQUE', err)){
  * >   //…
  * > }
@@ -358,9 +362,13 @@ module.exports.unwrap = function(envelopeOrSomething){
  */
 module.exports.taste = function(negotiationRule, err) {
   if (negotiationRule === undefined) { throw new Error('Unexpected usage of `flaverr.taste()`.  1st argument (the negotiation rule, or "taste", to be check for) is mandatory.'); }
-  if (!_.isString(negotiationRule) && (!_.isObject(negotiationRule) || _.isArray(negotiationRule))) { throw new Error('Unexpected usage of `flaverr.taste()`.  1st argument (the negotiation rule, or "taste", to check for) must be a string or dictionary (aka plain JS object), like the kind you\'d use for a similar purpose in Lodash or bluebird.  But instead, got: '+util.inspect(err, {depth: 5})); }
+  if (!_.isString(negotiationRule) && (!_.isObject(negotiationRule) || _.isArray(negotiationRule))) { throw new Error('Unexpected usage of `flaverr.taste()`.  1st argument (the negotiation rule, or "taste", to check for) must be a string or dictionary (aka plain JS object), like the kind you\'d use for a similar purpose in Lodash or bluebird.  But instead, got: '+util.inspect(negotiationRule, {depth: 5})); }
   if (err === undefined) { throw new Error('Unexpected usage of `flaverr.taste()`.  2nd argument (the Error to taste) is mandatory.'); }
-  if (!_.isError(err)) { throw new Error('Unexpected usage of `flaverr.taste()`.  2nd argument (the Error to taste) must be provided as a valid Error instance.  But instead, got: '+util.inspect(err, {depth: 5})); }
+
+  // Non-errors always fail the taste test.
+  if (!_.isError(err)) {
+    return false;
+  }
 
   if (_.isString(negotiationRule)) {
     return (err.code === negotiationRule);
