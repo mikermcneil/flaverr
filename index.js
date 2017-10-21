@@ -341,7 +341,7 @@ module.exports.wrap = function(codeOrCustomizations, raw, omen){
     }
   }
   else {
-    throw new Error('1st argument must be a valid string (to indicate the `.code` for the new error Envelope) or a dictionary of customizations (but never an Error instance).');
+    throw new Error('1st argument must be a valid string (to indicate the `.code` for the new error Envelope) or a dictionary of customizations (but never an Error instance).  But instead, got: '+util.inspect(codeOrCustomizations, {depth:5}));
   }
 
   return flaverr(_.extend({
@@ -403,11 +403,14 @@ module.exports.unwrap = function(negotiationRule, envelopeOrSomething){
   if (negotiationRule === undefined) { throw new Error('Unexpected usage of `flaverr.unwrap()`.  1st argument (the negotiation rule, or "unwrap", to be check for) is mandatory.'); }
   if (!_.isString(negotiationRule) && (!_.isObject(negotiationRule) || _.isArray(negotiationRule) || _.isError(negotiationRule))) { throw new Error('Unexpected usage of `flaverr.unwrap()`.  1st argument (the negotiation rule, or "unwrap", to check for) must be a string or dictionary (aka plain JS object), like the kind you\'d use for a similar purpose in Lodash or bluebird.  But instead, got: '+util.inspect(negotiationRule, {depth: 5})); }
 
-  if (!_.isError(envelopeOrSomething) || envelopeOrSomething.name !== 'Envelope' || !flaverr.taste(negotiationRule, envelopeOrSomething)) {
-    return envelopeOrSomething;
+  // First normalize (in case there are weird bluebird errors)
+  var thingToUnwrap = flaverr.parseError(envelopeOrSomething) || envelopeOrSomething;
+
+  if (!_.isError(thingToUnwrap) || thingToUnwrap.name !== 'Envelope' || !flaverr.taste(negotiationRule, thingToUnwrap)) {
+    return thingToUnwrap;
   }
   else {
-    return envelopeOrSomething.raw;
+    return thingToUnwrap.raw;
   }
 };
 
