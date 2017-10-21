@@ -317,13 +317,22 @@ module.exports.parseOrBuildError = function(err, omenForNewError) {
  * • an Error that doesn't match the provided negotiation rule
  *
  * @param  {String|Dictionary} negotiationRule
- * @param  {Ref} envelopeOrSomething
- * @return {Ref}
+ * @param  {Ref?} envelopeOrSomething
+ * @returns {Ref?}
+ *
+ *
+ * e.g.
+ * ```
+ *  flaverr.unwrap('E_NON_ERROR', flaverr.parseOrBuildError(3))
+ *  // => 3
+ *
+ *  flaverr.unwrap('E_NON_ERROR', 3)
+ *  // => 3
+ * ```
  */
 module.exports.unwrap = function(negotiationRule, envelopeOrSomething){
   if (negotiationRule === undefined) { throw new Error('Unexpected usage of `flaverr.unwrap()`.  1st argument (the negotiation rule, or "unwrap", to be check for) is mandatory.'); }
   if (!_.isString(negotiationRule) && (!_.isObject(negotiationRule) || _.isArray(negotiationRule))) { throw new Error('Unexpected usage of `flaverr.unwrap()`.  1st argument (the negotiation rule, or "unwrap", to check for) must be a string or dictionary (aka plain JS object), like the kind you\'d use for a similar purpose in Lodash or bluebird.  But instead, got: '+util.inspect(negotiationRule, {depth: 5})); }
-  if (envelopeOrSomething === undefined) { throw new Error('Unexpected usage of `flaverr.unwrap()`.  2nd argument (the Error envelope to unwrap) is mandatory.'); }
 
   if (!_.isError(envelopeOrSomething) || envelopeOrSomething.name !== 'Envelope' || !flaverr.taste(negotiationRule, envelopeOrSomething)) {
     return envelopeOrSomething;
