@@ -328,6 +328,9 @@ module.exports.parseOrBuildError = function(err, omenForNewError) {
  *
  *  flaverr.unwrap('E_NON_ERROR', 3)
  *  // => 3
+ *
+ *  flaverr.unwrap({code:'E_ESCAPE_HATCH', traceRef: self}, err)
+ *  // => …(the wrapped error)…
  * ```
  */
 module.exports.unwrap = function(negotiationRule, envelopeOrSomething){
