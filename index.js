@@ -305,6 +305,61 @@ module.exports.parseOrBuildError = function(err, omenForNewError) {
 
 
 
+/**
+ * flaverr.wrap()
+ *
+ * Return a new Envelope Error instance, stuffing the provided data into its `raw` property
+ * and flavoring the error with the provided customizations.
+ *
+ * > A few common envelope patterns come with recommended/conventional error codes:
+ * >
+ * > • E_ESCAPE_HATCH -- Useful as a special Error for escaping from an outer `try` block.  (Wraps an underlying Error instance.)
+ * > • E_NON_ERROR    -- Useful as simple mechanism for wrapping some value that is **not** an Error instance in an Error instance.  (Wraps some value other than an Error instance.)
+ *
+ * @param  {String} code
+ * @param  {Ref} raw
+ * @param  {Error?} omen    [optional omen]
+ *
+ * @returns {Error}   [envelope]
+ */
+module.exports.wrap = function(codeOrCustomizations, raw, omen){
+  if (raw === undefined) { throw new Error('2nd argument (the thing to wrap) is mandatory.'); }
+  if (omen !== undefined && !_.isError(omen)) { throw new Error('If provided, 3rd argument (optional omen for improving stack traces) must be an Error instance.'); }
+
+  var customizations;
+  if (_.isString(codeOrCustomizations)) {
+    customizations = {
+      code: codeOrCustomizations
+    };
+  }
+  else if (!_.isError(codeOrCustomizations) && _.isObject(codeOrCustomizations) && !_.isArray(codeOrCustomizations) && typeof codeOrCustomizations !== 'function') {
+    customizations = codeOrCustomizations;
+    if (customizations.name) {
+      throw new Error('Invalid 1st argument: No need to provide a `.name` for the new Error envelope-- the `.name` is attached automatically.');
+    }
+  }
+  else {
+    throw new Error('1st argument must be a valid string (to indicate the `.code` for the new error Envelope) or a dictionary of customizations (but never an Error instance).');
+  }
+
+  return flaverr(_.extend({
+    name: 'Envelope',
+    message: _.isError(raw) ? raw.message : _.isString(raw) ? raw : util.inspect(raw, {depth: 5}),
+    raw: raw
+  }, customizations), omen||undefined);
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // ^ FUTURE: Better error message for the non-error case?
+  // (see the `exits.error` impl in the machine runner for comparison,
+  // and be sure to try any changes out by hand to experience the message
+  // before deciding.  It's definitely not cut and dry whether there should
+  // even be a custom message in this case, or if just displaying the output
+  // as the `message` -- like we currently do -- is more appropriate)
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+};
+
+
+
+
 
 /**
  * flaverr.unwrap()
@@ -331,11 +386,14 @@ module.exports.parseOrBuildError = function(err, omenForNewError) {
  *
  *  flaverr.unwrap({code:'E_ESCAPE_HATCH', traceRef: self}, err)
  *  // => …(the wrapped error)…
+ *
+ *  flaverr.unwrap('E_NON_ERROR', flaverr.wrap('E_NON_ERROR', Infinity))
+ *  // => Infinity
  * ```
  */
 module.exports.unwrap = function(negotiationRule, envelopeOrSomething){
   if (negotiationRule === undefined) { throw new Error('Unexpected usage of `flaverr.unwrap()`.  1st argument (the negotiation rule, or "unwrap", to be check for) is mandatory.'); }
-  if (!_.isString(negotiationRule) && (!_.isObject(negotiationRule) || _.isArray(negotiationRule))) { throw new Error('Unexpected usage of `flaverr.unwrap()`.  1st argument (the negotiation rule, or "unwrap", to check for) must be a string or dictionary (aka plain JS object), like the kind you\'d use for a similar purpose in Lodash or bluebird.  But instead, got: '+util.inspect(negotiationRule, {depth: 5})); }
+  if (!_.isString(negotiationRule) && (!_.isObject(negotiationRule) || _.isArray(negotiationRule) || _.isError(negotiationRule))) { throw new Error('Unexpected usage of `flaverr.unwrap()`.  1st argument (the negotiation rule, or "unwrap", to check for) must be a string or dictionary (aka plain JS object), like the kind you\'d use for a similar purpose in Lodash or bluebird.  But instead, got: '+util.inspect(negotiationRule, {depth: 5})); }
 
   if (!_.isError(envelopeOrSomething) || envelopeOrSomething.name !== 'Envelope' || !flaverr.taste(negotiationRule, envelopeOrSomething)) {
     return envelopeOrSomething;
@@ -448,49 +506,4 @@ module.exports.taste = function(negotiationRule, err) {
 // More history / background:
 // https://gist.github.com/mikermcneil/c1bc2d57f5bedae810295e5ed8c5f935
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
-
-
-// FUTURE:
-//
-// /**
-//  * flaverr.wrap()
-//  *
-//  * > A few common envelope patterns come with recommended/conventional error codes:
-//  * >
-//  * > • E_ESCAPE_HATCH -- Useful as a special Error for escaping from an outer `try` block.  (Wraps an underlying Error instance.)
-//  * > • E_NON_ERROR    -- Useful as simple mechanism for wrapping some value that is **not** an Error instance in an Error instance.  (Wraps some value other than an Error instance.)
-//  *
-//  * @param  {String} code
-//  * @param  {Ref} raw
-//  * @param  {Error?} omen    [optional omen]
-//  *
-//  * @returns {Error}   [envelope]
-//  */
-// module.exports.wrap = function(code, raw, omen){
-//   if (!_.isString(code)) { throw new Error('1st argument (the `.code` to use in the wrapper Envelope instance) must be provided as a valid string.'); }
-//   if (raw === undefined) { throw new Error('2nd argument (the thing to wrap) is mandatory.'); }
-//   if (omen !== undefined && !_.isError(omen)) { throw new Error('If provided, 3rd argument (optional omen for improving stack traces) must be an Error instance.'); }
-
-//   return flaverr({
-//     name: 'Envelope',
-//     code: code,
-//     message: _.isError(raw) ? raw.message : _.isString(raw) ? raw : util.inspect(raw, {depth: 5}),
-//     raw: raw
-//   }, omen||undefined);
-//   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//   // ^ FUTURE: Better error message for the non-error case?
-//   // (see the `exits.error` impl in the machine runner for comparison,
-//   // and be sure to try any changes out by hand to experience the message
-//   // before deciding.  It's definitely not cut and dry whether there should
-//   // even be a custom message in this case, or if just displaying the output
-//   // as the `message` -- like we currently do -- is more appropriate)
-//   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// };
-
-
-// flaverr({ code: 'E_NON_ERROR' }, flaverr.wrap(result));
-// flaverr.wrap('E_NON_ERROR', result);
-
 
