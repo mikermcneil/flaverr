@@ -158,13 +158,26 @@ module.exports = flaverr;
  * a stack trace in console warning messages.
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  *
- * @param  {Error?} err   [If unspecified, a new Error will be instantiated on the fly and its stack will be used.]
+ * @param  {Error?|Function?} errOrCaller
+ *         If an Error is provided, its bare stack trace will be used.
+ *         Otherwise, a new Error will be instantiated on the fly and
+ *         its stack trace will be used.  If a function is provided
+ *         instead of an Error, it is understood to be the caller and,
+ *         used for improving the trace of the newly instantiated Error
+ *         instance.
+ *
  * @returns {String}
  */
 
-module.exports.getBareTrace = function (err){
-  if (err === undefined){ err = new Error(); }
-  if (!_.isError(err)){ throw new Error('Unexpected usage of `getBareTrace()`.  If an argument is supplied, it must be an Error instance.  Instead, got: '+util.inspect(err, {depth: 5})); }
+module.exports.getBareTrace = function getBareTrace(errOrCaller){
+  var err;
+  if (_.isError(errOrCaller)) {
+    err = errOrCaller;
+  } else if (_.isFunction(errOrCaller) || errOrCaller === undefined) {
+    err = flaverr.buildOmen(errOrCaller||getBareTrace);
+  } else {
+    throw new Error('Unexpected usage of `getBareTrace()`.  If an argument is supplied, it must be an Error instance or function (the caller to use when generating a new trace).  But instead, got: '+util.inspect(errOrCaller, {depth: 5}));
+  }
 
   var bareTrace = err.stack;
   var numCharsToShift = err.name.length + 2 + err.message.length;
