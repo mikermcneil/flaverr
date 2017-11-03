@@ -190,6 +190,8 @@ module.exports.getBareTrace = function (err){
  * >   :
  * >   undefined;
  * > ```
+ * >
+ * > Then `.omen()` method (see below) is a shortcut for this.
  *
  * @param {Function?} caller
  *        An optional function to use for context (useful for further improving stack traces)
@@ -200,12 +202,37 @@ module.exports.getBareTrace = function (err){
  * @returns {Error}
  */
 module.exports.buildOmen = function buildOmen(caller) {
-  if (caller !== undefined && !_.isFunction(caller)){ throw new Error('Unexpected usage of `buildOmen()`.  If an argument is supplied, it must be a function (the "caller", used for adjusting the stack trace).  Instead, got: '+util.inspect(caller, {depth: 5})); }
+  if (caller !== undefined && !_.isFunction(caller)){ throw new Error('Unexpected usage:  If an argument is supplied, it must be a function (the "caller", used for adjusting the stack trace).  Instead, got: '+util.inspect(caller, {depth: 5})); }
   var omen = flaverr({}, new Error('omen'), caller||buildOmen);
   if (caller !== undefined && !omen.stack.match(/\n/)) {
-    throw new Error('Unexpected behavior in `buildOmen()`.  When constructing omen using the specified "caller", the resulting Error\'s stack trace does not contain any newline characters.  This usually means the provided "caller" isn\'t actually the caller at all (or at least it wasn\'t this time).  Thus `Error.captureStackTrace()` failed to determine a trace.  To resolve this, pass in a valid "caller" or if that\'s not possible, omit the "caller" argument altogether.');
+    throw new Error('Unexpected behavior:  When constructing omen using the specified "caller", the resulting Error\'s stack trace does not contain any newline characters.  This usually means the provided "caller" isn\'t actually the caller at all (or at least it wasn\'t this time).  Thus `Error.captureStackTrace()` failed to determine a trace.  To resolve this, pass in a valid "caller" or if that\'s not possible, omit the "caller" argument altogether.');
   }
   return omen;
+};
+
+
+
+/**
+ * omen()
+ *
+ * Do exactly the same thing as `.buildOmen()`, but instead of ALWAYS returning a new
+ * Error instance, sometimes return `undefined` instead.  (Useful for performance reasons.)
+ *
+ * @param {Function?} caller
+ *        (See `buildOmen()` for details.)
+ *
+ * @returns {Error?}
+ *          Error instance is returned UNLESS:
+ *            (A) the `NODE_ENV` system environment is set to "production", and
+ *            (B) the `DEBUG` system environment variable has not been set, or is falsey.
+ *          Otherwise, this returns `undefined`.
+ */
+
+module.exports.omen = function omen(caller){
+  return (process.env.NODE_ENV !== 'production' || process.env.DEBUG)?
+    flaverr.buildOmen(caller||omen)
+    :
+    undefined;
 };
 
 
