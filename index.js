@@ -166,10 +166,27 @@ module.exports = flaverr;
  *         used for improving the trace of the newly instantiated Error
  *         instance.
  *
+ * @param {Number?} framesToKeep         (««« YOU PROBABLY SHOULDN'T USE THIS!!)
+ *        The number of frames from the top of the call stack to retain
+ *        in the output trace.  If omitted, all frames will be included.
+ *        |  WARNING:
+ *        |  It is almost NEVER a good idea to pass this argument in!!!
+ *        |  Making programmatic assumptions about the call stack is
+ *        |  notoriously difficult (and usually ill-advised), since it
+ *        |  is something that can be impacted by many unexpected factors:
+ *        |  from refactoring within your code base, interference from
+ *        |  your dependencies, or even other runtime aspects or your
+ *        |  users' environments that are completely out of your control.
+ *        |  This warning applies both to app-level code AND for modules!
+ *        |  In fact, the only reason this feature is even included in
+ *        |  `flaverr` is for use during debugging, as well as (much more
+ *        |  rarely) use cases for certain kinds of developer tooling.
+ *        |  Proceed at your own risk.  You have been warned!
+ *
  * @returns {String}
  */
 
-module.exports.getBareTrace = function getBareTrace(errOrCaller){
+module.exports.getBareTrace = function getBareTrace(errOrCaller, framesToKeep){
   var err;
   if (_.isError(errOrCaller)) {
     err = errOrCaller;
@@ -183,6 +200,13 @@ module.exports.getBareTrace = function getBareTrace(errOrCaller){
   var numCharsToShift = err.name.length + 2 + err.message.length;
   bareTrace = bareTrace.slice(numCharsToShift);
   bareTrace = bareTrace.replace(/^[\n]+/g,'');
+
+  if (framesToKeep !== undefined) {
+    if (!_.isNumber(framesToKeep) || framesToKeep < 1 || Math.floor(framesToKeep) !== framesToKeep) { throw new Error('Unexpected usage of `getBareTrace()`.  If a 2nd argument is supplied, it must be a positive whole integer (the # of stack frames to keep from the top of the call stack).  But instead, got: '+util.inspect(framesToKeep, {depth: 5})); }
+    // throw new Error('Unexpected usage of `getBareTrace()`.  The 2nd argument is experimental and not yet supported for external use.');
+    bareTrace = bareTrace.split(/\n/g).slice(0, framesToKeep).join('\n');
+  }
+
   return bareTrace;
 };
 
