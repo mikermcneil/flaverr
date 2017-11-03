@@ -6,7 +6,7 @@ Flavor an Error instance with the specified error code string or dictionary of c
 ## Installation &nbsp; [![NPM version](https://badge.fury.io/js/flaverr.svg)](http://badge.fury.io/js/flaverr)
 
 ```bash
-$ npm install flaverr --save --save-exact
+$ npm install flaverr
 ```
 
 
