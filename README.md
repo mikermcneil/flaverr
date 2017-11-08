@@ -211,10 +211,12 @@ throw flaverr({
 
 #### flaverr.getBareTrace()
 
-Return the bare stack trace string of an Error, with the identifying preamble (`.name` + colon + space + `.message`) trimmed off, leaving only the info about stack frames.
+Return the bare stack trace of an Error, with the identifying preamble (`.name` + colon + space + `.message`) trimmed off, leaving only the info about stack frames.
 
-**This is particularly useful for warning messages, and situations where you might want an error to contain more than one trace.**
+This is **particularly useful for including proper context within warning messages**.  (More rarely, it's useful for situations where you want an error to contain more than one trace-- although in that case, it's usually best to store the nested error as a separate property, such as `.raw`.  See `.wrap()` for ideas.)
 
+
+If you pass in an error, its stack trace will be harvested:
 
 ```js
 var err = new Error('Some error');
@@ -222,7 +224,9 @@ var err = new Error('Some error');
 flaverr.getBareTrace(err);
 //=>
 //'    at repl:1:28\n    at ContextifyScript.Script.runInThisContext (vm.js:44:33)\n    at REPLServer.defaultEval (repl.js:239:29)\n    at bound (domain.js:301:14)\n    at REPLServer.runBound [as eval] (domain.js:314:12)\n    at REPLServer.onLine (repl.js:433:10)\n    at emitOne (events.js:120:20)\n    at REPLServer.emit (events.js:210:7)\n    at REPLServer.Interface._onLine (readline.js:278:10)\n    at REPLServer.Interface._line (readline.js:625:8)'
+// ^^^ this is a string
 ```
+
 
 If nothing is passed in, a new Error will be instantiated on the fly and its stack will be used:
 
@@ -232,8 +236,21 @@ flaverr.getBareTrace();
 //'    at repl:1:28\n    at ContextifyScript.Script.runInThisContext (vm.js:44:33)\n    at REPLServer.defaultEval (repl.js:239:29)\n    at bound (domain.js:301:14)\n    at REPLServer.runBound [as eval] (domain.js:314:12)\n    at REPLServer.onLine (repl.js:433:10)\n    at emitOne (events.js:120:20)\n    at REPLServer.emit (events.js:210:7)\n    at REPLServer.Interface._onLine (readline.js:278:10)\n    at REPLServer.Interface._line (readline.js:625:8)'
 ```
 
+If a function is passed in instead of an Error, it is understood to be a "caller" from somewhere on the current call stack.  A new Error will be instantiated instead, and the provided function will be used to align the stack trace of that new Error so that it begins at the point the provided function was called:
 
-Here is a more real-world example lifted straight out of [parley](https://npmjs.com/package/parley):
+```js
+function foo() {
+  console.log(flaverr.getBareTrace(foo));
+}
+
+foo();
+//=>
+//'    at repl:1:28\n    at ContextifyScript.Script.runInThisContext (vm.js:44:33)\n    at REPLServer.defaultEval (repl.js:239:29)\n    at bound (domain.js:301:14)\n    at REPLServer.runBound [as eval] (domain.js:314:12)\n    at REPLServer.onLine (repl.js:433:10)\n    at emitOne (events.js:120:20)\n    at REPLServer.emit (events.js:210:7)\n    at REPLServer.Interface._onLine (readline.js:278:10)\n    at REPLServer.Interface._line (readline.js:625:8)'
+// ^^Note that `foo()` does not appear in the stack trace like it normally would.
+```
+
+
+Finally, to tie that all together, here is a more real-world example lifted straight out of [parley](https://npmjs.com/package/parley):
 
 ```javascript
 // Implementorland spinlock
@@ -257,8 +274,36 @@ if (self._hasFinishedExecuting) {
 }
 ```
 
+> ##### The second argument to .getBareTrace()
+>
+> .getBareTrace() also accepts a second argument, `framesToKeep`: the number of frames from the top of the call stack to retain in the output trace.  (i.e. all other stack frames will be trimmed off)
+>
+> ```js
+> //
+> var top3StackFrames = flaverr.getBareTrace(self._omen, 3);
+> ```
+>
+> In the general case, without this argument, all frames will be included- up to the JavaScript engine's configured stack trace depth.  **This default behavior is good, and is how you should leave things in the vast majority of cases.**
+> Especially never use the second argument unless your code is aware of the source of the error being trimmed, and you're sure that all relevant context will exist in the top _n_ stack frames.
+> Proceed at your own risk.  You have been warned!
+
+
+## Help
+
+If you have a question, need commercial support from the engineers who build Sails, or you just want to talk Sails/Node.js with other folks in the community, click [here](https://sailsjs.com/support).
+
+
+## Bugs &nbsp; [![NPM version](https://badge.fury.io/js/flaverr.svg)](http://npmjs.com/package/flaverr)
+
+To report a bug, [click here](https://sailsjs.com/bugs).
+
+
+## Contributing
+
+Please observe the guidelines and conventions laid out in the [Sails project contribution guide](https://sailsjs.com/documentation/contributing) when opening issues or submitting pull requests.
+
+[![NPM](https://nodei.co/npm/flaverr.png?downloads=true)](http://npmjs.com/package/flaverr)
 
 ## License
 
-MIT &copy; 2016, 2017 Mike McNeil
-
+MIT &copy; 2016, 2017 [Mike McNeil](https://twitter.com/mikermcneil)
