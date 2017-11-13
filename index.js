@@ -93,8 +93,23 @@ function flaverr (codeOrCustomizations, err, caller){
         if (codeOrCustomizations.message === undefined) {
           codeOrCustomizations.message = err.message;
         }
-        var numCharsToShift = err.name.length + 2 + err.message.length;
-        err.stack = codeOrCustomizations.name + ': '+ codeOrCustomizations.message + err.stack.slice(numCharsToShift);
+
+        var numCharsToShift;
+        if (err.message.length > 0) {
+          // e.g. stack `FooBar: Blah blah blah\n  at skdfgjagsd…`
+          numCharsToShift = err.name.length + 2 + err.message.length;
+        } else {
+          // e.g. stack `FooBar\n  at dudgjkadgsj…`
+          numCharsToShift = err.name.length;
+        }
+
+        if (codeOrCustomizations.message.length > 0) {
+          // e.g. stack `BazBot: Blurge blurge blurge\n  at dudgjkadgsj…`
+          err.stack = codeOrCustomizations.name + ': '+ codeOrCustomizations.message + err.stack.slice(numCharsToShift);
+        } else {
+          // e.g. stack `BazBot\n  at dudgjkadgsj…`
+          err.stack = codeOrCustomizations.name + err.stack.slice(numCharsToShift);
+        }
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         // FUTURE: Explore a fancier strategy like this (maybe):
         // ```
@@ -196,8 +211,16 @@ module.exports.getBareTrace = function getBareTrace(errOrCaller, framesToKeep){
     throw new Error('Unexpected usage of `getBareTrace()`.  If an argument is supplied, it must be an Error instance or function (the caller to use when generating a new trace).  But instead, got: '+util.inspect(errOrCaller, {depth: 5}));
   }
 
+  var numCharsToShift;
+  if (err.message.length > 0) {
+    // e.g. stack `FooBar: Blah blah blah\n  at skdfgjagsd…`
+    numCharsToShift = err.name.length + 2 + err.message.length;
+  } else {
+    // e.g. stack `FooBar\n  at dudgjkadgsj…`
+    numCharsToShift = err.name.length;
+  }
+
   var bareTrace = err.stack;
-  var numCharsToShift = err.name.length + 2 + err.message.length;
   bareTrace = bareTrace.slice(numCharsToShift);
   bareTrace = bareTrace.replace(/^[\n]+/g,'');
 
