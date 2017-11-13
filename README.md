@@ -1,7 +1,8 @@
 # flaverr
 
-Flavor an Error instance with the specified error code string or dictionary of customizations.
+Utility library for JavaScript Errors, stack traces, and omens.
 
+> Take your JavaScript Errors to "flavortown".
 
 ## Installation &nbsp; [![NPM version](https://badge.fury.io/js/flaverr.svg)](http://badge.fury.io/js/flaverr)
 
@@ -12,6 +13,23 @@ $ npm install flaverr
 
 ## Usage
 
+The most basic usage of `flaverr` is just to call it as a function.
+
+#### Basics
+
+Flavor an Error instance with the specified error code string or dictionary of customizations:
+
+```js
+var flaverr = require('flaverr');
+
+var someError = new Error('Whoa whoa whoa!');
+//…
+someError = flaverr({
+  name: 'CompatibilityError',
+  code: 'E_WHOA_WHOA_WHOA'
+}, someError);
+```
+
 - If you provide a string as the first argument, that string will be set as the Error's `code`.
 - If you provide a dictionary as the first argument, that dictionary's keys will get folded into the Error as properties.
 
@@ -19,36 +37,64 @@ $ npm install flaverr
 #### Attach an error code
 
 ```javascript
-const flaverr = require('flaverr');
-
-var err = flaverr('notFound', new Error('Could not find user with the specified id.'));
-// => assert(err.code === 'notFound' && err.message === 'Could not find user with the specified id.')
+var err = new Error('Could not find user with the specified id.');
+err = flaverr('E_NOT_FOUND', err);
+// => assert(err.code === 'E_NOT_FOUND' && err.message === 'Could not find user with the specified id.')
 // => assert(err.constructor.name === 'Error')
 ```
 
 #### Attach arbitrary properties
 
 ```javascript
-const flaverr = require('flaverr');
-
 var err = flaverr({
-  code: 'notFound',
-  output: { foo: 'bar' }
+  code: 'E_NOT_FOUND',
+  raw: { foo: 'bar' }
 }, new Error('Could not find user with the specified id.'));
-// => assert(err.code === 'notFound' && err.message === 'Could not find user with the specified id.')
+// => assert(err.code === 'E_NOT_FOUND' && err.message === 'Could not find user with the specified id.')
+// => assert(err.raw.foo === 'bar')
+// => assert(err.constructor.name === 'Error')
+```
+
+
+#### Improve the error message
+
+```javascript
+var err = new Error('Could not find user with the specified id.');
+err = flaverr({
+  name: 'ConsistencyViolation',
+  message: 'Logged-in user has gone missing!',
+  code: 'E_NOT_FOUND',
+  raw: { id: 123 }
+}, err);
+// => assert(err.code === 'E_NOT_FOUND' && err.message === 'Logged-in user has gone missing!')
+// => assert(err.raw.id === 123 && err.name === 'ConsistencyViolation')
+// => assert(err.constructor.name === 'Error')
+```
+
+#### Build a new Error
+
+```javascript
+var err = flaverr({
+  name: 'ConsistencyViolation',
+  message: 'Logged-in user has gone missing!',
+  raw: { id: 123 }
+}, err);
+// => assert(err.code === 'notFound' && err.message === 'Logged-in user has gone missing!')
+// => assert(err.raw.id === 123 && err.name === 'ConsistencyViolation')
 // => assert(err.constructor.name === 'Error')
 ```
 
 
 ## A few examples of common use cases
 
-#### Tagging an error with a code before sending it through an asynchronous callback
+#### In .intercept()
 
 ```javascript
-if (err) { return done(err); }
-if (!user) {
-  return done(flaverr('notFound', new Error('Could not find a user with that id (`'+req.param('id')+'`).')));
-}
+var html = await sails.renderView('emails/email-verify-account', { token: '…' })
+.intercept('ENOENT', (err)=>flaverr({
+  code: 'E_MISSING_TEMPLATE_OR_LAYOUT',
+  message: 'Could not locate either template or layout file on disk.  '+err.message
+}));
 ```
 
 
@@ -71,7 +117,19 @@ try {
 }
 ```
 
-#### In an asynchronous loop
+
+#### Tagging an error with a code before sending it through an asynchronous callback
+
+```javascript
+if (err) { return done(err); }
+if (!user) {
+  return done(flaverr('notFound', new Error('Could not find a user with that id (`'+req.param('id')+'`).')));
+}
+```
+
+#### In a traditional asynchronous loop
+
+> This is less of a thing now that we have async/await!  But still leaving this example here for reference.
 
 ```javascript
 async.eachSeries(userRecords, function (user, next) {
