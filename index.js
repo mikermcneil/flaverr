@@ -405,8 +405,9 @@ module.exports.parseOrBuildError = function(err, omenForNewError) {
  *       a new Error instance.
  *
  * • E_FROM_WITHIN    -- (Wraps an Error with a conflicting/confusing `.code` or `.name`)
- *       Useful as a generic wrapper around a mysterious internal error
- *
+ *       Useful as a wrapper around some value that was thrown from untrusted code, and that might
+ *       have properties that conflict with programmatic error negotiation elsewhere.
+ *       (Useful for wrapping errors thrown from invocations of procedural params, like iteratees.)
  *
  * Anything else can be generally assumed to be some mysterious internal error from a 3rd party
  * module/etc -- an error which may or may not be directly relevant to your users.  In fact, it
@@ -414,11 +415,17 @@ module.exports.parseOrBuildError = function(err, omenForNewError) {
  *
  * ----------------------------------------------------------------------------------------------------
  *
- * @param  {String?|Dictionary?} codeOrCustomizations
- * @param  {Ref} raw
- * @param  {Error?} omen
+ * @param  {String|Dictionary} codeOrCustomizations
+ *         Customizations for the new Envelope.
  *
- * @returns {Error}   [envelope]
+ * @param  {Ref} raw
+ *         The thing to wrap.
+ *
+ * @param  {Error?} omen
+ *         An optional Error instance to consume instead of building a new Error instance.
+ *
+ * @returns {Error}
+ *          The new Envelope.
  */
 module.exports.wrap = function(_first, _second, _third){
 
@@ -482,17 +489,22 @@ module.exports.wrap = function(_first, _second, _third){
 /**
  * flaverr.unwrap()
  *
- * Unwrap the provided Error envelope, grabbing its "raw" property.
+ * Unwrap the provided Envelope, grabbing its "raw" property.
  *
- * Or, in some cases, just return the original data as-is, if provided data is:
+ * Or, in some cases, just return the original 2nd argument as-is, if it is:
  * • a non-error
  * • an Error without `.name === 'Envelope'`
  * • an Error that doesn't match the provided negotiation rule
  *
  * @param  {String|Dictionary} negotiationRule
- * @param  {Ref?} envelopeOrSomething
- * @returns {Ref?}
+ *         A negotiation rule (e.g. like you'd use with flaverr.taste() or parley/bluebird's .catch() )
  *
+ * @param  {Ref?} envelopeOrSomething
+ *         The thing to try and potentially unwrap.
+ *
+ * @returns {Ref?}
+ *          EITHER the original, untouched `envelopeOrSomething` (if it wasn't an Envelope or wasn't a match)
+ *          OR the `.raw` stuff from inside of it (assuming it was an Envelop and it was a match)
  *
  * e.g.
  * ```
