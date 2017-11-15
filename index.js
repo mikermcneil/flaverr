@@ -399,12 +399,40 @@ module.exports.parseOrBuildError = function(err, omenForNewError) {
 };
 
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// FUTURE: (see note in .wrap() below for more info)
+// (+ maybe we can come up with a snappier, but also non-ambiguous, name for this?
+// Basically this is for handling completely unknown/untrusted things that have been
+// sent back through a callback, rejected, or thrown from somewhere else.)
+//
+//     (Maybe `.insulate()`?)
+//
+// ```
+// module.exports.parseOrBuildThenWrapAndRetrace = function parseOrBuildThenWrapAndRetrace(raw, caller){
+//   var omen = caller? flaverr.omen(caller) : flaverr.omen(parseOrBuildThenWrapAndRetrace);
+//   var err = flaverr.parseError(raw);
+//   if (err){
+//     // If it's already a parseable Error, wrap it.
+//     return flaverr({
+//       name: 'Envelope',
+//       message: _.isError(err) ? err.message : _.isString(err) ? err : util.inspect(err, {depth: 5}),
+//       raw: err
+//     }, omen);
+//   } else {
+//     // Otherwise, it's some random thing so still wrap it, but use the special code.
+//     // (i.e. just like in `parseOrBuildError()`)
+//     return flaverr.wrap('E_NON_ERROR', raw, omen||undefined);
+//   }
+// };
+// ```
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
 /**
  * flaverr.wrap()
  *
- * Return a new Envelope Error instance, stuffing the provided data into its `raw` property
- * and flavoring the new envelope error with the provided customizations.
+ * Build & return a new Envelope (Error instance), stuffing the provided data into its
+ * `raw` property and flavoring the new envelope error with the provided customizations.
  *
  * > Note: Any Envelope is easily reversed back into its raw state (see `flaverr.unwrap()`).
  *
@@ -443,6 +471,12 @@ module.exports.parseOrBuildError = function(err, omenForNewError) {
  */
 module.exports.wrap = function(_first, _second, _third){
 
+  // TODO: remove variadics again for now  (it may have been nice to have slightly different
+  // semantics for .wrap(), but it's hard to say for sure, and now it's too late to change it.
+  // Instead, we'll plan on using a different more generic method for the simpler use case
+  // where this comes up; e.g. `err = flaverr.parseOrBuildThenWrapAndRetrace(err[, caller])`
+  // where `err` must be a parseError()-able thing, and caller is ALWAYS a caller- not an omen)
+
   // Variadics
   var codeOrCustomizations;
   var raw;
@@ -462,7 +496,7 @@ module.exports.wrap = function(_first, _second, _third){
 
   // Handle any other usage and verify + understand everything else:
 
-  if (raw === undefined) { throw new Error('`raw` (the thing to wrap) is mandatory.'); }
+  if (raw === undefined) { throw new Error('The 2nd argument to `flaverr.wrap()` (the raw thing to wrap) is mandatory.'); }
   if (omen !== undefined && !_.isError(omen)) { throw new Error('If provided, `omen` must be an Error instance to be used for improving stack traces.'); }
 
   var customizations;
@@ -474,11 +508,11 @@ module.exports.wrap = function(_first, _second, _third){
   else if (!_.isError(codeOrCustomizations) && _.isObject(codeOrCustomizations) && !_.isArray(codeOrCustomizations) && typeof codeOrCustomizations !== 'function') {
     customizations = codeOrCustomizations;
     if (customizations.name) {
-      throw new Error('Invalid 1st argument: No need to provide a `.name` for the new Error envelope-- the `.name` is attached automatically.');
+      throw new Error('Invalid 1st argument to `flaverr.wrap()`: No need to provide a custom `name` for the new Error envelope-- the `.name` for errors returned by flaverr.wrap() is set in stone ("Envelope") and always attached automatically.');
     }
   }
   else {
-    throw new Error('1st argument must be a valid string (to indicate the `.code` for the new error Envelope) or a dictionary of customizations (but never an Error instance).  But instead, got: '+util.inspect(codeOrCustomizations, {depth:5}));
+    throw new Error('1st argument to `flaverr.wrap()` must be either a valid string (to indicate the `.code` for the new error Envelope) or a dictionary of customizations (but never an Error instance!)  But instead, got: '+util.inspect(codeOrCustomizations, {depth:5}));
   }
 
   return flaverr(_.extend({
