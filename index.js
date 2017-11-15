@@ -50,20 +50,6 @@ var _ = require('@sailshq/lodash');
 
 function flaverr (codeOrCustomizations, err, caller){
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  // FUTURE: Consider changing this to be slightly more tolerant
-  // so that, before checking usage, it does:
-  // ```
-  // err = flaverr.parseError(err) || err;
-  // ```
-  //
-  // That would allow this to automatically tolerate things like
-  // _near_ errors (that contain real Errors inside).  These things
-  // come from other packages like bluebird, Stripe's Node SDK, etc.
-  // If we did this, it shouldn't cause any unintended consequences
-  // (since we'd end up parsing out a normal Error here anyway.)
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
   if (err !== undefined && !_.isError(err)) {
     throw new Error('Unexpected usage of `flaverr()`.  If specified, expected 2nd argument to be an Error instance (but instead got `'+util.inspect(err, {depth: null})+'`)');
   }
