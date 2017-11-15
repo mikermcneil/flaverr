@@ -390,22 +390,59 @@ module.exports.parseOrBuildError = function(err, omenForNewError) {
  * flaverr.wrap()
  *
  * Return a new Envelope Error instance, stuffing the provided data into its `raw` property
- * and flavoring the error with the provided customizations.
+ * and flavoring the new envelope error with the provided customizations.
  *
- * > A few common envelope patterns come with recommended/conventional error codes:
- * >
- * > • E_ESCAPE_HATCH -- Useful as a special Error for escaping from an outer `try` block.  (Wraps an underlying Error instance.)
- * > • E_NON_ERROR    -- Useful as simple mechanism for wrapping some value that is **not** an Error instance in an Error instance.  (Wraps some value other than an Error instance.)
+ * > Note: Any Envelope is easily reversed back into its raw state (see `flaverr.unwrap()`).
  *
- * @param  {String} code
+ * ----------------------------------------------------------------------------------------------------
+ * A few common envelope patterns come with recommended/conventional error codes:
+ *
+ * • E_ESCAPE_HATCH   -- (Wraps an underlying Error instance in an easily-reversible fashion.)
+ *       Useful as a special Error for escaping from an outer `try` block.
+ *
+ * • E_NON_ERROR      -- (Wraps some value other than an Error instance in an easily-reversible fashion.)
+ *       Useful as simple mechanism for encasing some value that is **not an Error instance** inside
+ *       a new Error instance.
+ *
+ * • E_FROM_WITHIN    -- (Wraps an Error with a conflicting/confusing `.code` or `.name`)
+ *       Useful as a generic wrapper around a mysterious internal error
+ *
+ *
+ * Anything else can be generally assumed to be some mysterious internal error from a 3rd party
+ * module/etc -- an error which may or may not be directly relevant to your users.  In fact, it
+ * may or may not even necessarily be an Error instance!  (Regardless, it is accessible in `.raw`.)
+ *
+ * ----------------------------------------------------------------------------------------------------
+ *
+ * @param  {String?|Dictionary?} codeOrCustomizations
  * @param  {Ref} raw
- * @param  {Error?} omen    [optional omen]
+ * @param  {Error?} omen
  *
  * @returns {Error}   [envelope]
  */
-module.exports.wrap = function(codeOrCustomizations, raw, omen){
-  if (raw === undefined) { throw new Error('2nd argument (the thing to wrap) is mandatory.'); }
-  if (omen !== undefined && !_.isError(omen)) { throw new Error('If provided, 3rd argument (optional omen for improving stack traces) must be an Error instance.'); }
+module.exports.wrap = function(_first, _second, _third){
+
+  // Variadics
+  var codeOrCustomizations;
+  var raw;
+  var omen;
+  if (_.isError(_first)) {
+    if (arguments.length > 2) { throw new Error('If `raw` (the thing to wrap) is supplied as the 1st argument, no 3rd argument should be provided!'); }
+    // `.wrap(raw[, omen])`
+    codeOrCustomizations = {};
+    raw = _first;
+    omen = _second;
+  } else {
+    // `.wrap(codeOrCustomizations, raw[, omen])`
+    codeOrCustomizations = _first;
+    raw = _second;
+    omen = _third;
+  }
+
+  // Handle any other usage and verify + understand everything else:
+
+  if (raw === undefined) { throw new Error('`raw` (the thing to wrap) is mandatory.'); }
+  if (omen !== undefined && !_.isError(omen)) { throw new Error('If provided, `omen` must be an Error instance to be used for improving stack traces.'); }
 
   var customizations;
   if (_.isString(codeOrCustomizations)) {
@@ -426,16 +463,16 @@ module.exports.wrap = function(codeOrCustomizations, raw, omen){
   return flaverr(_.extend({
     name: 'Envelope',
     message: _.isError(raw) ? raw.message : _.isString(raw) ? raw : util.inspect(raw, {depth: 5}),
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // ^ FUTURE: Better error message for the non-error case?
+    // (see the `exits.error` impl in the machine runner for comparison,
+    // and be sure to try any changes out by hand to experience the message
+    // before deciding.  It's definitely not cut and dry whether there should
+    // even be a custom message in this case, or if just displaying the output
+    // as the `message` -- like we currently do -- is more appropriate)
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     raw: raw
   }, customizations), omen||undefined);
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  // ^ FUTURE: Better error message for the non-error case?
-  // (see the `exits.error` impl in the machine runner for comparison,
-  // and be sure to try any changes out by hand to experience the message
-  // before deciding.  It's definitely not cut and dry whether there should
-  // even be a custom message in this case, or if just displaying the output
-  // as the `message` -- like we currently do -- is more appropriate)
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 };
 
 
