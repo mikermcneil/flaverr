@@ -400,27 +400,26 @@ module.exports.parseOrBuildError = function(err, omenForNewError) {
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// FUTURE: (see note in .wrap() below for more info)
+// FUTURE: (see note in .wrap() for reasoning)
 // (+ maybe we can come up with a snappier, but also non-ambiguous, name for this?
 // Basically this is for handling completely unknown/untrusted things that have been
 // sent back through a callback, rejected, or thrown from somewhere else.)
 //
-//     (Maybe `.insulate()`?)
+//     (Maybe `.insulate()`?  And its inverse)
 //
 // ```
 // module.exports.parseOrBuildThenWrapAndRetrace = function parseOrBuildThenWrapAndRetrace(raw, caller){
+//   // Note that it's important for us to build an omen here, rather than accepting one as an argument!
+//   // (Remember: This function is not intended for low-level use!)
+//
 //   var omen = caller? flaverr.omen(caller) : flaverr.omen(parseOrBuildThenWrapAndRetrace);
 //   var err = flaverr.parseError(raw);
 //   if (err){
 //     // If it's already a parseable Error, wrap it.
-//     return flaverr({
-//       name: 'Envelope',
-//       message: _.isError(err) ? err.message : _.isString(err) ? err : util.inspect(err, {depth: 5}),
-//       raw: err
-//     }, omen);
+//     return flaverr.wrap('E_FROM_WITHIN', err, omen||undefined);
 //   } else {
-//     // Otherwise, it's some random thing so still wrap it, but use the special code.
-//     // (i.e. just like in `parseOrBuildError()`)
+//     // Otherwise, it's some random thing so still wrap it, but use the special code
+//     // for non-errors (i.e. just like in `parseOrBuildError()`)
 //     return flaverr.wrap('E_NON_ERROR', raw, omen||undefined);
 //   }
 // };
@@ -436,6 +435,9 @@ module.exports.parseOrBuildError = function(err, omenForNewError) {
  *
  * > Note: Any Envelope is easily reversed back into its raw state (see `flaverr.unwrap()`).
  *
+ * > WARNING: THIS IS DESIGNED FOR LOW-LEVEL USE IN FLOW CONTROL TOOLS LIKE PARLEY/MACHINE/ETC!
+ * > (See .insulate() above for a simpler utility designed for more common, everyday tasks in userland.)
+ *
  * ----------------------------------------------------------------------------------------------------
  * A few common envelope patterns come with recommended/conventional error codes:
  *
@@ -446,10 +448,13 @@ module.exports.parseOrBuildError = function(err, omenForNewError) {
  *       Useful as simple mechanism for encasing some value that is **not an Error instance** inside
  *       a new Error instance.
  *
- * • E_FROM_WITHIN    -- (Wraps an Error with a conflicting/confusing `.code` or `.name`)
- *       Useful as a wrapper around some value that was thrown from untrusted code, and that might
- *       have properties that conflict with programmatic error negotiation elsewhere.
- *       (Useful for wrapping errors thrown from invocations of procedural params, like iteratees.)
+ * • E_FROM_WITHIN    -- (Wraps something thrown/rejected/throwbacked from untrusted code)
+ *       Useful as a wrapper around some value that was thrown from untrusted code, and thus might
+ *       have properties (`.code`, `.name`, etc) that could conflict with programmatic error negotiation
+ *       elsewhere, or that would be otherwise confusing if unleashed on userland as-is. (This is
+ *       particularly useful for wrapping errors thrown from invocations of your procedural params;
+ *       e.g. in the `catch` block where you handle any error thrown by invoking a custom, user-specified
+ *       iteratee function.)
  *
  * Anything else can be generally assumed to be some mysterious internal error from a 3rd party
  * module/etc -- an error which may or may not be directly relevant to your users.  In fact, it
@@ -458,7 +463,7 @@ module.exports.parseOrBuildError = function(err, omenForNewError) {
  * ----------------------------------------------------------------------------------------------------
  *
  * @param  {String|Dictionary} codeOrCustomizations
- *         Customizations for the new Envelope.
+ *         Customizations for the Envelope.  (Use `{}` to indicate no customizations.)
  *
  * @param  {Ref} raw
  *         The thing to wrap.
@@ -466,35 +471,17 @@ module.exports.parseOrBuildError = function(err, omenForNewError) {
  * @param  {Error?} omen
  *         An optional Error instance to consume instead of building a new Error instance.
  *
+ * ----------------------------------------------------------------------------------------------------
  * @returns {Error}
- *          The new Envelope.
+ *          The Envelope (either a new Error instance, or the modified version of the provided omen)
  */
-module.exports.wrap = function(_first, _second, _third){
+module.exports.wrap = function(codeOrCustomizations, raw, omen){
 
-  // TODO: remove variadics again for now  (it may have been nice to have slightly different
-  // semantics for .wrap(), but it's hard to say for sure, and now it's too late to change it.
-  // Instead, we'll plan on using a different more generic method for the simpler use case
-  // where this comes up; e.g. `err = flaverr.parseOrBuildThenWrapAndRetrace(err[, caller])`
-  // where `err` must be a parseError()-able thing, and caller is ALWAYS a caller- not an omen)
-
-  // Variadics
-  var codeOrCustomizations;
-  var raw;
-  var omen;
-  if (_.isError(_first)) {
-    if (arguments.length > 2) { throw new Error('If `raw` (the thing to wrap) is supplied as the 1st argument, no 3rd argument should be provided!'); }
-    // `.wrap(raw[, omen])`
-    codeOrCustomizations = {};
-    raw = _first;
-    omen = _second;
-  } else {
-    // `.wrap(codeOrCustomizations, raw[, omen])`
-    codeOrCustomizations = _first;
-    raw = _second;
-    omen = _third;
-  }
-
-  // Handle any other usage and verify + understand everything else:
+  // Note: This method always requires customizations, and is very careful to put `raw`
+  // **untouched** into the new Envelope's `.raw` property.  Similarly, `.unwrap()` helps
+  // you retrieve this property from an Envelope untouched, through careful ducktyping.
+  // This is good for low-level utilities that need to verify correctness, but not super
+  // beautiful to use.  See `.insulate()` above for a simpler, everyday utility.
 
   if (raw === undefined) { throw new Error('The 2nd argument to `flaverr.wrap()` (the raw thing to wrap) is mandatory.'); }
   if (omen !== undefined && !_.isError(omen)) { throw new Error('If provided, `omen` must be an Error instance to be used for improving stack traces.'); }
@@ -508,11 +495,11 @@ module.exports.wrap = function(_first, _second, _third){
   else if (!_.isError(codeOrCustomizations) && _.isObject(codeOrCustomizations) && !_.isArray(codeOrCustomizations) && typeof codeOrCustomizations !== 'function') {
     customizations = codeOrCustomizations;
     if (customizations.name) {
-      throw new Error('Invalid 1st argument to `flaverr.wrap()`: No need to provide a custom `name` for the new Error envelope-- the `.name` for errors returned by flaverr.wrap() is set in stone ("Envelope") and always attached automatically.');
+      throw new Error('Invalid 1st argument to `flaverr.wrap()`: No need to provide a custom `name` for the Envelope-- the `.name` for errors returned by flaverr.wrap() is set in stone ("Envelope") and always attached automatically.');
     }
   }
   else {
-    throw new Error('1st argument to `flaverr.wrap()` must be either a valid string (to indicate the `.code` for the new error Envelope) or a dictionary of customizations (but never an Error instance!)  But instead, got: '+util.inspect(codeOrCustomizations, {depth:5}));
+    throw new Error('1st argument to `flaverr.wrap()` must be either a valid string to indicate the `.code` for the Envelope, or a dictionary of customizations to fold in (never an Error instance though!)  But instead of one of those, got: '+util.inspect(codeOrCustomizations, {depth:5}));
   }
 
   return flaverr(_.extend({
