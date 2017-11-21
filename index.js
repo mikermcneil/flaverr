@@ -51,11 +51,11 @@ var _ = require('@sailshq/lodash');
 function flaverr (codeOrCustomizations, err, caller){
 
   if (err !== undefined && !_.isError(err)) {
-    throw new Error('Unexpected usage of `flaverr()`.  If specified, expected 2nd argument to be an Error instance (but instead got `'+util.inspect(err, {depth: null})+'`)');
+    throw new Error('Unexpected usage.  If specified, expected 2nd argument to be an Error instance (but instead got `'+util.inspect(err, {depth: null})+'`)');
   }
 
   if (caller !== undefined && typeof caller !== 'function') {
-    throw new Error('Unexpected usage of `flaverr()`.  If specified, expected 3rd argument should be a function that will be used as a stack trace context (but instead got `'+util.inspect(caller, {depth: null})+'`)');
+    throw new Error('Unexpected usage.  If specified, expected 3rd argument should be a function that will be used as a stack trace context (but instead got `'+util.inspect(caller, {depth: null})+'`)');
   }
 
 
@@ -68,7 +68,7 @@ function flaverr (codeOrCustomizations, err, caller){
     }
   }
   else if (_.isObject(codeOrCustomizations) && !_.isArray(codeOrCustomizations) && typeof codeOrCustomizations !== 'function') {
-    if (codeOrCustomizations.stack) { throw new Error('Unexpected usage of `flaverr()`.  Customizations (dictionary provided as 1st arg) are not allowed to contain a `stack`.  Instead, use `newErr = flaverr({ name: original.name, message: original.message }, omen)`'); }
+    if (codeOrCustomizations.stack) { throw new Error('Unexpected usage.  Customizations (dictionary provided as 1st arg) are not allowed to contain a `stack`.  Instead, use `newErr = flaverr({ name: original.name, message: original.message }, omen)`'); }
     // if (codeOrCustomizations.stack) { throw new Error('Unexpected usage of `flaverr()`.  Customizations (dictionary provided as 1st arg) are not allowed to contain a `stack`.  Instead, use `flaverr.traceFrom(omen, err)`'); }
 
     if (!err){
@@ -130,7 +130,7 @@ function flaverr (codeOrCustomizations, err, caller){
 
   }
   else {
-    throw new Error('Unexpected usage of `flaverr()`.  Expected 1st argument to be either a string error code or a dictionary of customizations (but instead got `'+util.inspect(codeOrCustomizations, {depth: null})+'`)');
+    throw new Error('Unexpected usage.  Expected 1st argument to be either a string error code or a dictionary of customizations (but instead got `'+util.inspect(codeOrCustomizations, {depth: null})+'`)');
   }
 
 
@@ -208,7 +208,7 @@ module.exports.getBareTrace = function getBareTrace(errOrCaller, framesToKeep){
   } else if (_.isFunction(errOrCaller) || errOrCaller === undefined) {
     err = flaverr.buildOmen(errOrCaller||getBareTrace);
   } else {
-    throw new Error('Unexpected usage of `getBareTrace()`.  If an argument is supplied, it must be an Error instance or function (the caller to use when generating a new trace).  But instead, got: '+util.inspect(errOrCaller, {depth: 5}));
+    throw new Error('Unexpected usage of `.getBareTrace()`.  If an argument is supplied, it must be an Error instance or function (the caller to use when generating a new trace).  But instead, got: '+util.inspect(errOrCaller, {depth: 5}));
   }
 
   var numCharsToShift;
@@ -225,7 +225,7 @@ module.exports.getBareTrace = function getBareTrace(errOrCaller, framesToKeep){
   bareTrace = bareTrace.replace(/^[\n]+/g,'');
 
   if (framesToKeep !== undefined) {
-    if (!_.isNumber(framesToKeep) || framesToKeep < 1 || Math.floor(framesToKeep) !== framesToKeep) { throw new Error('Unexpected usage of `getBareTrace()`.  If a 2nd argument is supplied, it must be a positive whole integer (the # of stack frames to keep from the top of the call stack).  But instead, got: '+util.inspect(framesToKeep, {depth: 5})); }
+    if (!_.isNumber(framesToKeep) || framesToKeep < 1 || Math.floor(framesToKeep) !== framesToKeep) { throw new Error('Unexpected usage of `.getBareTrace()`.  If a 2nd argument is supplied, it must be a positive whole integer (the # of stack frames to keep from the top of the call stack).  But instead, got: '+util.inspect(framesToKeep, {depth: 5})); }
     // throw new Error('Unexpected usage of `getBareTrace()`.  The 2nd argument is experimental and not yet supported for external use.');
     bareTrace = bareTrace.split(/\n/g).slice(0, framesToKeep).join('\n');
   }
@@ -549,8 +549,8 @@ module.exports.wrap = function(codeOrCustomizations, raw, omen){
  * ```
  */
 module.exports.unwrap = function(negotiationRule, envelopeOrSomething){
-  if (negotiationRule === undefined) { throw new Error('Unexpected usage of `flaverr.unwrap()`.  1st argument (the negotiation rule, or "unwrap", to be check for) is mandatory.'); }
-  if (!_.isString(negotiationRule) && (!_.isObject(negotiationRule) || _.isArray(negotiationRule) || _.isError(negotiationRule))) { throw new Error('Unexpected usage of `flaverr.unwrap()`.  1st argument (the negotiation rule, or "unwrap", to check for) must be a string or dictionary (aka plain JS object), like the kind you\'d use for a similar purpose in Lodash or bluebird.  But instead, got: '+util.inspect(negotiationRule, {depth: 5})); }
+  if (negotiationRule === undefined) { throw new Error('Unexpected usage of `.unwrap()`.  1st argument (the negotiation rule, or "unwrap", to be check for) is mandatory.'); }
+  if (!_.isString(negotiationRule) && (!_.isObject(negotiationRule) || _.isArray(negotiationRule) || _.isError(negotiationRule))) { throw new Error('Unexpected usage of `.unwrap()`.  1st argument (the negotiation rule, or "unwrap", to check for) must be a string or dictionary (aka plain JS object), like the kind you\'d use for a similar purpose in Lodash or bluebird.  But instead, got: '+util.inspect(negotiationRule, {depth: 5})); }
 
   // First normalize (in case there are weird bluebird errors)
   var thingToUnwrap = flaverr.parseError(envelopeOrSomething) || envelopeOrSomething;
@@ -597,9 +597,9 @@ module.exports.unwrap = function(negotiationRule, envelopeOrSomething){
  * > ```
  */
 module.exports.taste = function(negotiationRule, err) {
-  if (negotiationRule === undefined) { throw new Error('Unexpected usage of `flaverr.taste()`.  1st argument (the negotiation rule, or "taste", to be check for) is mandatory.'); }
-  if (!_.isString(negotiationRule) && (!_.isObject(negotiationRule) || _.isArray(negotiationRule))) { throw new Error('Unexpected usage of `flaverr.taste()`.  1st argument (the negotiation rule, or "taste", to check for) must be a string or dictionary (aka plain JS object), like the kind you\'d use for a similar purpose in Lodash or bluebird.  But instead, got: '+util.inspect(negotiationRule, {depth: 5})); }
-  if (err === undefined) { throw new Error('Unexpected usage of `flaverr.taste()`.  2nd argument (the Error to taste) is mandatory.'); }
+  if (negotiationRule === undefined) { throw new Error('Unexpected usage of `.taste()`.  1st argument (the negotiation rule, or "taste", to be check for) is mandatory.'); }
+  if (!_.isString(negotiationRule) && (!_.isObject(negotiationRule) || _.isArray(negotiationRule))) { throw new Error('Unexpected usage of `.taste()`.  1st argument (the negotiation rule, or "taste", to check for) must be a string or dictionary (aka plain JS object), like the kind you\'d use for a similar purpose in Lodash or bluebird.  But instead, got: '+util.inspect(negotiationRule, {depth: 5})); }
+  if (err === undefined) { throw new Error('Unexpected usage of `.taste()`.  2nd argument (the Error to taste) is mandatory.'); }
 
   // Non-errors always fail the taste test.
   if (!_.isError(err)) {
