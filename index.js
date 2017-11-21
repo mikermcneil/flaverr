@@ -5,6 +5,16 @@
 var util = require('util');
 var _ = require('@sailshq/lodash');
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Lodash methods in use:
+//
+// • Basic things:
+//   ° _.isString, _.isObject, _.isArray, _.isError, _.isFunction, _.isNumber
+// • Node <=5 compat. things:
+//   ° _.extend
+// • Stranger things:
+//   ° _.matches   (for .taste())
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /**
  * flaverr()
