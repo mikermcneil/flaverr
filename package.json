@@ -1,6 +1,6 @@
 {
   "name": "flaverr",
-  "version": "1.8.2",
+  "version": "1.8.3",
   "description": "Flavor an Error instance with the specified error code string or dictionary of customizations.",
   "main": "index.js",
   "scripts": {
