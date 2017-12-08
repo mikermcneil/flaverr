@@ -333,16 +333,28 @@ module.exports.parseError = function(err) {
   if (_.isError(err)) {
     // > ok as-is
     return err;
-  }
-  else if (_.isObject(err) && err.cause && _.isError(err.cause)) {
+  } else if (_.isObject(err) && err.cause && _.isError(err.cause)) {
+    // Bluebird "errors"
+    //
     // > async+await errors from bluebird are not necessarily "true" Error instances,
     // > as per _.isError() anyway (see https://github.com/node-machine/machine/commits/6b9d9590794e33307df1f7ba91e328dd236446a9).
     // > So to be reasonable, we have to be a bit more relaxed here and tolerate these
     // > sorts of "errors" directly as well (by tweezing out the `cause`, which is
     // > where the underlying Error instance actually lives.)
     return err.cause;
-  }
-  else {
+  } else if (_.isObject(err) && _.isString(err.type) && _.isString(err.message) && _.isString(err.stack)) {
+    // Stripe SDK "errors"
+    //
+    // > The Stripe SDK likes to throw some not-quite-Error-instances.
+    // > But they're close enough to use once you factor in a little integration
+    // > code to adapt them.  (Note that we have to remove the `stack`-- but we
+    // > alias it separately as `_originalStack`.)
+    var stripeErrorProps = _.omit(err, ['stack']);
+    return flaverr(_.extend(stripeErrorProps, {
+      name: err.type,
+      _originalStack: err.stack
+    }));
+  } else {
     return undefined;
   }
 
