@@ -163,7 +163,7 @@ function flaverr (codeOrCustomizations, err, caller){
   }//ﬁ
 
   return err;
-};//ƒ
+}//ƒ
 
 
 // Export flaverr.
