@@ -205,6 +205,10 @@ module.exports.defaults = function(defaults) {
   if (_.isString(defaults)) {
     defaults = { code: defaults };
   }
+  // Validate defaults.
+  if (!_.isObject(defaults) || _.isArray(defaults) || typeof defaults === 'function') {
+    throw new Error('Unexpected usage.  First argument should be a string or a plain dictionary (but instead got `'+util.inspect(defaults, {depth: null})+'`)');
+  }
   // Return a wrapper function that calls flaverr.
   return function(codeOrCustomizations, err, caller) {
     // If the wrapper was called without any further customizations, shift the args over
