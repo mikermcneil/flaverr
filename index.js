@@ -60,9 +60,13 @@ var _ = require('@sailshq/lodash');
 
 function flaverr (codeOrCustomizations, err, caller){
 
-  if (err !== undefined && !_.isError(err)) {
-    throw new Error('Unexpected usage.  If specified, expected 2nd argument to be an Error instance (but instead got `'+util.inspect(err, {depth: null})+'`)');
-  }
+  // Parse error (e.g. tolerate bluebird/stripe look-alikes)
+  if (err !== undefined) {
+    err = flaverr.parseError(err);
+    if (!_.isError(err)) {
+      throw new Error('Unexpected usage.  If specified, expected 2nd argument to be an Error instance (but instead got `'+util.inspect(err, {depth: null})+'`)');
+    }
+  }//ﬁ
 
   if (caller !== undefined && typeof caller !== 'function') {
     throw new Error('Unexpected usage.  If specified, expected 3rd argument should be a function that will be used as a stack trace context (but instead got `'+util.inspect(caller, {depth: null})+'`)');
@@ -79,7 +83,10 @@ function flaverr (codeOrCustomizations, err, caller){
   }
   else if (_.isObject(codeOrCustomizations) && !_.isArray(codeOrCustomizations) && typeof codeOrCustomizations !== 'function') {
     if (codeOrCustomizations.stack) { throw new Error('Unexpected usage.  Customizations (dictionary provided as 1st arg) are not allowed to contain a `stack`.  Instead, use `newErr = flaverr({ name: original.name, message: original.message }, omen)`'); }
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // FUTURE: (maybe?  see traceFrom notes below)
     // if (codeOrCustomizations.stack) { throw new Error('Unexpected usage of `flaverr()`.  Customizations (dictionary provided as 1st arg) are not allowed to contain a `stack`.  Instead, use `flaverr.traceFrom(omen, err)`'); }
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     if (!err){
 
