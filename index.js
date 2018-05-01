@@ -62,7 +62,7 @@ function flaverr (codeOrCustomizations, err, caller){
 
   // Parse error (e.g. tolerate bluebird/stripe look-alikes)
   if (err !== undefined) {
-    err = flaverr.parseError(err);
+    err = flaverr.parseError(err) || err;
     if (!_.isError(err)) {
       throw new Error('Unexpected usage.  If specified, expected 2nd argument to be an Error instance (but instead got `'+util.inspect(err, {depth: null})+'`)');
     }
