@@ -325,10 +325,11 @@ module.exports.omen = function omen(caller){
  * >
  * > • Otherwise, it attempts to tease out a canonical Error using a few
  * >   different heuristics, including support for parsing special
- * >   not-quite-Errors from bluebird.
+ * >   not-quite-Errors from bluebird, Stripe, MSSQL TDS ("tedious"), etc.
  * >
  * > • If no existing Error instance can be squeezed out, then return `undefined`.
- * >   (The `.parseError()` function **NEVER** constructs Error instances.)
+ * >   (The `.parseError()` function **NEVER** constructs Error instances, other
+ * >   than the special cases for Error-like objects mentioned above.)
  *
  * @param  {Ref}  err
  *
@@ -360,7 +361,16 @@ module.exports.parseError = function(err) {
     return flaverr(_.extend(stripeErrorProps, {
       name: err.type,
       _originalStack: err.stack
-    }));
+    }));// ^^this constructs a new Error instance
+  } else if (_.isObject(err) && !_.isArray(err) && _.isString(err.message) && _.isString(err.stack)) {
+    // Other, more generic handling of any Error-like "errors"
+    //
+    // > e.g. from TDS (https://npmjs.com/package/tedious)
+    // >
+    // > Like above, they're "close enough".
+    return flaverr(_.extend(_.omit(err, ['stack']), {
+      _originalStack: err.stack
+    }));// ^^this constructs a new Error instance
   } else {
     return undefined;
   }
