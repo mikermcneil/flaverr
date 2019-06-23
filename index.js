@@ -177,6 +177,67 @@ function flaverr (codeOrCustomizations, err, caller){
 module.exports = flaverr;
 
 
+/**
+ * flaverr.defaults()
+ *
+ * Return a factory that creates flavored errors with default characteristics.
+ *
+ * For example:
+ *
+ *   var invalidModelErr = flaverr.defaults({ name: 'userError', code: 'E_INVALID_MODEL_DEF' });
+ *
+ * allows you to do:
+ *
+ *   throw invalidModelError(new Error('The model is invalid!'))
+ *
+ * rather than adding the same name and code manually to every flaverr you throw.
+ *
+ * The factory supports adding / overwriting the error flavor, as well:
+ *
+ *   throw invalidModelError({ code: 'E_REALLY_INVALID_DEF' }, new Error('The model is invalid!'))
+ *
+ * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ * @param {String|Dictionary} defaults
+ *           e.g. `"E_USAGE"`
+ *                    -OR-
+ *                `{ name: 'UsageError', code: 'E_UHOH', machineInstance: foo, errors: [], misc: 'etc' }`
+ *
+ * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ * @returns {Function}
+ *          A flaverr factory.
+ * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ */
+module.exports.defaults = function(defaults) {
+  // Make sure the defaults are always a dictionary, so we can use them with _.defaults()
+  if (_.isString(defaults)) {
+    defaults = { code: defaults };
+  }
+  // Validate defaults.
+  if (!_.isObject(defaults) || _.isArray(defaults) || typeof defaults === 'function') {
+    throw new Error('Unexpected usage.  First argument should be a string or a plain dictionary (but instead got `'+util.inspect(defaults, {depth: null})+'`)');
+  }
+  // Return a wrapper function that calls flaverr.
+  return function(codeOrCustomizations, err, caller) {
+    // If the wrapper was called without any further customizations, shift the args over
+    // so that the error instance is in `err`.
+    if (_.isError(codeOrCustomizations)) {
+      err = codeOrCustomizations;
+      codeOrCustomizations = {};
+    }
+    // If the wrapper was called with a string as the first arg, expand it out so we
+    // can apply our defaults.
+    if (_.isString(codeOrCustomizations)) {
+      codeOrCustomizations = { code: codeOrCustomizations };
+    }
+    // Apply the defaults.
+    _.defaults(codeOrCustomizations, defaults);
+    // Return a flaverr.
+    return flaverr(codeOrCustomizations, err, caller);
+  };
+};
+
+
+
 
 /**
  * flaverr.getBareTrace()
